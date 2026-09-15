@@ -8,7 +8,8 @@ BOT_TOKEN = os.environ["BOT_TOKEN"]
 client = TelegramClient("bot", API_ID, API_HASH)
 
 async def main():
-    print("✅ HabeshaSport bot connected!")
+    await client.start(bot_token=BOT_TOKEN)
+    print("✅ HabeshaSport bot connected successfully!")
 
 with client:
     client.loop.run_until_complete(main())
