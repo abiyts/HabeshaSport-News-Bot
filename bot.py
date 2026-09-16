@@ -10,9 +10,16 @@ client = TelegramClient("bot", API_ID, API_HASH)
 
 async def main():
     await client.start(bot_token=BOT_TOKEN)
-    print("✅ HabeshaSport bot connected successfully!")
-    print("🤖 Bot is running...")
-    
-    await client.run_until_disconnected()
+
+    print("✅ Bot connected!")
+
+    await client.send_message(
+        "@habeshasport",
+        "🤖 HabeshaSport News Bot is connected successfully!"
+    )
+
+    print("✅ Test message sent to @habeshasport!")
+
+    await client.disconnect()
 
 asyncio.run(main())
