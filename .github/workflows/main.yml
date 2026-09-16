@@ -21,6 +21,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Check bot token
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          echo "BOT_TOKEN length: ${#BOT_TOKEN}"
+
       - name: Run bot
         env:
           API_ID: ${{ secrets.API_ID }}
