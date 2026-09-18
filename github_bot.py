@@ -99,10 +99,13 @@ def translate_to_amharic(text):
 
     try:
         url = (
-            "https://api.mymemory.translated.net/get"
-            "?q="
-            + urllib.parse.quote(text[:450])
-            + "&langpair=en|am"
+            "https://translate.googleapis.com/translate_a/single"
+            "?client=gtx"
+            "&sl=en"
+            "&tl=am"
+            "&dt=t"
+            "&q="
+            + urllib.parse.quote(text[:3000])
         )
 
         request = urllib.request.Request(
@@ -115,20 +118,20 @@ def translate_to_amharic(text):
 
         result = json.loads(data)
 
-        translated = result.get(
-            "responseData", {}
-        ).get(
-            "translatedText", ""
-        )
+        translated = ""
+
+        for part in result[0]:
+            if part[0]:
+                translated += part[0]
 
         if translated:
             return translated.strip()
 
-        print("⚠ Translation returned empty result")
+        print("⚠ Google translation returned empty result")
         return text
 
     except Exception as e:
-        print("⚠ Translation error:", e)
+        print("⚠ Google translation error:", e)
         return text
 
 # =========================================================
