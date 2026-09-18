@@ -70,7 +70,7 @@ def save_state(state):
 # REMOVE LINKS
 # =========================================================
 
-ddef remove_links(text):
+def remove_links(text):
     if not text:
         return ""
 
