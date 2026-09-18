@@ -7,6 +7,7 @@ import urllib.request
 import asyncio
 
 from telethon import TelegramClient
+from telethon import Button
 from telethon.sessions import StringSession
 
 
@@ -25,6 +26,19 @@ USER_SESSION = os.environ["USER_SESSION"]
 # =========================================================
 
 DESTINATION_CHANNEL = "@habeshasport"
+
+# =========================================================
+# PUSH BUTTONS
+# =========================================================
+
+PUSH_BUTTONS = [
+    [Button.url("Man City ሲቲ", "https://t.me/mancitynewset"),
+     Button.url("Liverpool ሊቨርፑል", "https://t.me/liverpoolethiop")],
+    [Button.url("Arsenal አርሰናል", "https://t.me/arsenaletgunners"),
+     Button.url("Man United Ethiopia", "https://t.me/manunitedethiopia")],
+    [Button.url("Chelsea ቼልሲ", "https://t.me/chelseafcet"),
+     Button.url("Ethio Sport", "https://t.me/habeshasport")],
+]
 
 SOURCE_CHANNELS = [
     "@futbol_fudbol_sport_tv_gollar",
@@ -140,28 +154,27 @@ def translate_to_amharic(text):
 
 from datetime import datetime, timezone, timedelta
 
-def get_ethiopian_date():
-    today = datetime.now(timezone.utc) + timedelta(hours=3)
+def get_ethiopian_date_and_session():
+    now = datetime.now(timezone.utc) + timedelta(hours=3)
 
-    year = today.year
-    month = today.month
-    day = today.day
+    year = now.year
+    month = now.month
+    day = now.day
 
-    # Ethiopian calendar conversion
-    if month > 9 or (month == 9 and day >= 11):
-        eth_year = year - 8
+    # Ethiopian New Year is September 11, or September 12 in Gregorian
+    # years immediately before a Gregorian leap year.
+    new_year_day = 12 if (year + 1) % 4 == 0 else 11
+    new_year = datetime(year, 9, new_year_day)
+
+    if now.replace(tzinfo=None) < new_year:
+        eth_year = year - 9
+        previous_gregorian_year = year - 1
+        previous_new_year_day = 12 if (year) % 4 == 0 else 11
+        new_year = datetime(previous_gregorian_year, 9, previous_new_year_day)
     else:
         eth_year = year - 8
 
-    # Days elapsed since Ethiopian New Year
-    new_year = datetime(year, 9, 11)
-
-    if today.replace(tzinfo=None) < new_year:
-        eth_year = year - 9
-        new_year = datetime(year - 1, 9, 12)
-
-    days = (today.replace(tzinfo=None) - new_year).days
-
+    days = (now.replace(tzinfo=None) - new_year).days
     eth_month = (days // 30) + 1
     eth_day = (days % 30) + 1
 
@@ -181,7 +194,27 @@ def get_ethiopian_date():
         13: "ጳጉሜን"
     }
 
-    return f"{months[eth_month]} {eth_day}, {eth_year}"
+    # Ethiopia-time posting session
+    hour = now.hour
+    if 6 <= hour < 12:
+        session = "ጠዋት | Morning"
+    elif 12 <= hour < 14:
+        session = "እኩለ ቀን | Midday"
+    elif 14 <= hour < 18:
+        session = "ከሰዓት | Afternoon"
+    elif 18 <= hour < 21:
+        session = "ማታ | Evening"
+    else:
+        session = "ሌሊት | Night"
+
+    time_text = now.strftime("%I:%M %p")
+
+    return (
+        f"{months[eth_month]} {eth_day}, {eth_year}",
+        session,
+        time_text
+    )
+
 # =========================================================
 # CREATE FINAL POST
 # =========================================================
@@ -199,8 +232,11 @@ def create_post(text):
 
     translated = html.escape(translated)
 
+    eth_date, session, ethiopian_time = get_ethiopian_date_and_session()
+
     return (
-        f"📅 <b>ዛሬ {get_ethiopian_date()}</b>\n"
+        f"📅 <b>{eth_date} | {session}</b>\n"
+        f"🕒 <b>{ethiopian_time}</b>\n"
         "⚽ <b>አጭር የስፖርት ዜና ለቤተሰቦቻችን</b>\n\n"
         + translated
         + "\n\n"
@@ -303,6 +339,7 @@ async def process_message(
                     media,
                     caption=post,
                     parse_mode="html",
+                    buttons=PUSH_BUTTONS,
                     force_document=False
                 )
 
@@ -325,7 +362,8 @@ async def process_message(
             await bot_client.send_message(
                 DESTINATION_CHANNEL,
                 post,
-                parse_mode="html"
+                parse_mode="html",
+                buttons=PUSH_BUTTONS
             )
 
             print("✅ TEXT POSTED TO", DESTINATION_CHANNEL)
