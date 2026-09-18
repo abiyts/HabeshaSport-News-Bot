@@ -245,51 +245,9 @@ async def check_channel(
         print("\n" + "-" * 60)
         print("🔎 Checking:", username)
 
-        # -------------------------------------------------
-        # ONE-TIME SAFE SYNCHRONIZATION
-        # -------------------------------------------------
+                last_id = int(state.get(channel, 0))
 
-        latest_messages = await user_client.get_messages(
-            entity,
-            limit=1
-        )
-
-        if latest_messages:
-            latest_id = latest_messages[0].id
-
-            print("🛡 SAFE SYNC MODE")
-            print("Current latest message ID:", latest_id)
-            print("➡ Saving current position.")
-            print("➡ NO MESSAGE WILL BE POSTED.")
-
-            state[channel] = latest_id
-            save_state(state)
-
-        return
-
-        last_id = int(state.get(channel, 0))
-
-        if last_id <= 13:
-            latest_messages = await user_client.get_messages(
-                entity,
-                limit=1
-            )
-
-            if latest_messages:
-                latest_id = latest_messages[0].id
-
-                print("⚠ Safe initialization for:", channel)
-                print("Old state:", last_id)
-                print("Current latest message ID:", latest_id)
-                print(
-                    "➡ Starting from current message. "
-                    "Old messages will NOT be posted."
-                )
-
-                state[channel] = latest_id
-                save_state(state)
-
-                return
+        print("Last processed ID:", last_id)
 
         print("Last processed ID:", last_id)
 
