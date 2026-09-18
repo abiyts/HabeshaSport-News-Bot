@@ -245,7 +245,7 @@ async def check_channel(
         print("\n" + "-" * 60)
         print("🔎 Checking:", username)
 
-                last_id = int(state.get(channel, 0))
+        last_id = int(state.get(channel, 0))
 
         print("Last processed ID:", last_id)
 
