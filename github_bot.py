@@ -343,19 +343,23 @@ async def main():
     state = load_state()
 
     user_client = TelegramClient(
-    StringSession(USER_SESSION),
-    API_ID,
-    API_HASH,
-    connection_retries=10,
-    retry_delay=5,
-    request_retries=10,
-    auto_reconnect=True
-)
+        StringSession(USER_SESSION),
+        API_ID,
+        API_HASH,
+        connection_retries=10,
+        retry_delay=5,
+        request_retries=10,
+        auto_reconnect=True
+    )
 
     bot_client = TelegramClient(
         StringSession(),
         API_ID,
-        API_HASH
+        API_HASH,
+        connection_retries=10,
+        retry_delay=5,
+        request_retries=10,
+        auto_reconnect=True
     )
 
     try:
