@@ -33,7 +33,6 @@ SOURCE_CHANNELS = [
     "@Sky_sports_football_updates",
     "@Premier_League_News_TG",
     "@goal_sport_football",
-    "@espndc_news",
 ]
 
 
