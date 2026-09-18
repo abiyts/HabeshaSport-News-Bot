@@ -206,7 +206,54 @@ def create_post(text):
         "❤️  🔥  👍  😂  😢\n"
         "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
+# =========================================================
+# ADVERTISEMENT FILTER
+# =========================================================
 
+def is_advertisement(message):
+    text = (message.message or "").lower()
+
+    # Check message text
+    ad_words = [
+        ".apk",
+        ".exe",
+        "download apk",
+        "download now",
+        "betwinner",
+        "linebet",
+        "1xbet",
+        "betting",
+        "casino",
+        "bonus",
+        "promo code",
+        "advertisement",
+        "advertising"
+    ]
+
+    for word in ad_words:
+        if word in text:
+            return True
+
+    # Check attached file name
+    if message.file:
+        filename = getattr(message.file, "name", None)
+
+        if filename:
+            filename = filename.lower()
+
+            if filename.endswith((".apk", ".exe", ".msi", ".bat", ".scr")):
+                return True
+
+            for word in [
+                "betwinner",
+                "linebet",
+                "1xbet",
+                "casino"
+            ]:
+                if word in filename:
+                    return True
+
+    return False
 # =========================================================
 # PROCESS ONE MESSAGE
 # =========================================================
@@ -219,7 +266,15 @@ async def process_message(
 ):
     try:
         original_text = message.message or ""
+        # -------------------------------------------------
+        # BLOCK ADVERTISEMENTS
+        # -------------------------------------------------
 
+        if is_advertisement(message):
+            print("🚫 ADVERTISEMENT BLOCKED")
+            print("SOURCE:", source_username)
+            print("TEXT:", original_text[:300])
+            return True
         print("\n" + "=" * 60)
         print("📰 NEW NEWS")
         print("SOURCE:", source_username)
