@@ -36,7 +36,7 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           USER_SESSION: ${{ secrets.USER_SESSION }}
         run: |
-          python github_bot.py
+          python -u github_bot.py
 
       - name: Save bot state
         run: |
