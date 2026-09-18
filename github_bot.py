@@ -247,38 +247,39 @@ async def check_channel(
         print("🔎 Checking:", username)
 
         # -------------------------------------------------
-# SAFE INITIALIZATION
-# -------------------------------------------------
-# If this is a newly added channel or its state is
-# suspiciously low, establish the current latest
-# message as the starting point.
-# This prevents old messages from being reposted.
-# -------------------------------------------------
+        # SAFE INITIALIZATION
+        # -------------------------------------------------
+        # Prevent newly added channels from reposting
+        # their old message history.
+        # -------------------------------------------------
 
-last_id = int(state.get(channel, 0))
+        last_id = int(state.get(channel, 0))
 
-if last_id <= 13:
-    latest_messages = await user_client.get_messages(
-        entity,
-        limit=1
-    )
+        if last_id <= 13:
+            latest_messages = await user_client.get_messages(
+                entity,
+                limit=1
+            )
 
-    if latest_messages:
-        latest_id = latest_messages[0].id
+            if latest_messages:
+                latest_id = latest_messages[0].id
 
-        print("⚠ Safe initialization for:", channel)
-        print("Old state:", last_id)
-        print("Current latest message ID:", latest_id)
-        print("➡ Starting from current message. Old messages will NOT be posted.")
+                print("⚠ Safe initialization for:", channel)
+                print("Old state:", last_id)
+                print("Current latest message ID:", latest_id)
+                print(
+                    "➡ Starting from current message. "
+                    "Old messages will NOT be posted."
+                )
 
-        state[channel] = latest_id
-        save_state(state)
+                state[channel] = latest_id
+                save_state(state)
 
-        return
+                return
 
-print("Last processed ID:", last_id)
+        print("Last processed ID:", last_id)
 
-messages = []
+        messages = []
 
         async for message in user_client.iter_messages(
             entity,
@@ -308,7 +309,9 @@ messages = []
                     highest_successful_id,
                     message.id
                 )
+
                 await asyncio.sleep(2)
+
             else:
                 print("⚠ Message failed.")
                 print("⚠ State will NOT move past this message.")
