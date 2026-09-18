@@ -70,12 +70,20 @@ def save_state(state):
 # REMOVE LINKS
 # =========================================================
 
-def remove_links(text):
+ddef remove_links(text):
     if not text:
         return ""
 
+    # Remove normal web links
     text = re.sub(r'https?://\S+', '', text)
+
+    # Remove Telegram links
     text = re.sub(r'(https?://)?t\.me/\S+', '', text)
+
+    # Remove Telegram/channel usernames such as @FabrizioRomano
+    text = re.sub(r'(?<!\w)@[A-Za-z0-9_]{3,}', '', text)
+
+    # Remove extra blank lines
     text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
 
     return text.strip()
