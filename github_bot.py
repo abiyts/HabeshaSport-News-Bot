@@ -247,11 +247,26 @@ async def check_channel(
         print("🔎 Checking:", username)
 
         # -------------------------------------------------
-        # SAFE INITIALIZATION
+        # ONE-TIME SAFE SYNCHRONIZATION
         # -------------------------------------------------
-        # Prevent newly added channels from reposting
-        # their old message history.
-        # -------------------------------------------------
+
+        latest_messages = await user_client.get_messages(
+            entity,
+            limit=1
+        )
+
+        if latest_messages:
+            latest_id = latest_messages[0].id
+
+            print("🛡 SAFE SYNC MODE")
+            print("Current latest message ID:", latest_id)
+            print("➡ Saving current position.")
+            print("➡ NO MESSAGE WILL BE POSTED.")
+
+            state[channel] = latest_id
+            save_state(state)
+
+        return
 
         last_id = int(state.get(channel, 0))
 
