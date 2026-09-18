@@ -49,5 +49,6 @@ jobs:
             echo "No state changes"
           else
             git commit -m "Update bot state"
-            git push
+            git pull --rebase origin main
+            git push origin main
           fi
