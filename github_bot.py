@@ -246,11 +246,39 @@ async def check_channel(
         print("\n" + "-" * 60)
         print("🔎 Checking:", username)
 
-        last_id = int(state.get(channel, 0))
+        # -------------------------------------------------
+# SAFE INITIALIZATION
+# -------------------------------------------------
+# If this is a newly added channel or its state is
+# suspiciously low, establish the current latest
+# message as the starting point.
+# This prevents old messages from being reposted.
+# -------------------------------------------------
 
-        print("Last processed ID:", last_id)
+last_id = int(state.get(channel, 0))
 
-        messages = []
+if last_id <= 13:
+    latest_messages = await user_client.get_messages(
+        entity,
+        limit=1
+    )
+
+    if latest_messages:
+        latest_id = latest_messages[0].id
+
+        print("⚠ Safe initialization for:", channel)
+        print("Old state:", last_id)
+        print("Current latest message ID:", latest_id)
+        print("➡ Starting from current message. Old messages will NOT be posted.")
+
+        state[channel] = latest_id
+        save_state(state)
+
+        return
+
+print("Last processed ID:", last_id)
+
+messages = []
 
         async for message in user_client.iter_messages(
             entity,
