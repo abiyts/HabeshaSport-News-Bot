@@ -142,12 +142,15 @@ def create_post(text):
     translated = html.escape(translated)
 
     return (
-        "⚽ <b>የእግር ኳስ ዜና</b>\n\n"
+        "📅 <b>ዛሬ [የኢትዮጵያ ቀን]</b>\n"
+        "⚽ <b>አጭር የስፖርት ዜና ለቤተሰቦቻችን</b>\n\n"
         + translated
         + "\n\n"
-        "📢 <b>Habesha Sport</b>"
+        "━━━━━━━━━━━━━━\n"
+        "📢 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
+        "❤️  🔥  👍  😂  😢\n"
+        "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
-
 
 # =========================================================
 # PROCESS ONE MESSAGE
