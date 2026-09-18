@@ -123,7 +123,54 @@ def translate_to_amharic(text):
         print("⚠ Translation error:", e)
         return text
 
+# =========================================================
+# ETHIOPIAN CALENDAR DATE
+# =========================================================
 
+from datetime import datetime, timezone, timedelta
+
+def get_ethiopian_date():
+    today = datetime.now(timezone.utc) + timedelta(hours=3)
+
+    year = today.year
+    month = today.month
+    day = today.day
+
+    # Ethiopian calendar conversion
+    if month > 9 or (month == 9 and day >= 11):
+        eth_year = year - 8
+    else:
+        eth_year = year - 8
+
+    # Days elapsed since Ethiopian New Year
+    new_year = datetime(year, 9, 11)
+
+    if today.replace(tzinfo=None) < new_year:
+        eth_year = year - 9
+        new_year = datetime(year - 1, 9, 12)
+
+    days = (today.replace(tzinfo=None) - new_year).days
+
+    eth_month = (days // 30) + 1
+    eth_day = (days % 30) + 1
+
+    months = {
+        1: "መስከረም",
+        2: "ጥቅምት",
+        3: "ኅዳር",
+        4: "ታኅሣሥ",
+        5: "ጥር",
+        6: "የካቲት",
+        7: "መጋቢት",
+        8: "ሚያዝያ",
+        9: "ግንቦት",
+        10: "ሰኔ",
+        11: "ሐምሌ",
+        12: "ነሐሴ",
+        13: "ጳጉሜን"
+    }
+
+    return f"{months[eth_month]} {eth_day}, {eth_year}"
 # =========================================================
 # CREATE FINAL POST
 # =========================================================
@@ -142,7 +189,7 @@ def create_post(text):
     translated = html.escape(translated)
 
     return (
-        "📅 <b>ዛሬ [የኢትዮጵያ ቀን]</b>\n"
+        f"📅 <b>ዛሬ {get_ethiopian_date()}</b>\n"
         "⚽ <b>አጭር የስፖርት ዜና ለቤተሰቦቻችን</b>\n\n"
         + translated
         + "\n\n"
