@@ -31,6 +31,8 @@ DESTINATION_CHANNEL = "@habeshasport"
 # PUSH BUTTONS
 # =========================================================
 
+BUTTON_INTERVAL = 10
+
 PUSH_BUTTONS = [
     [Button.url("Man City ሲቲ", "https://t.me/mancitynewset"),
      Button.url("Liverpool ሊቨርፑል", "https://t.me/liverpoolethiop")],
@@ -301,7 +303,8 @@ async def process_message(
     user_client,
     bot_client,
     message,
-    source_username
+    source_username,
+    post_count
 ):
     try:
         original_text = message.message or ""
@@ -313,7 +316,7 @@ async def process_message(
             print("🚫 ADVERTISEMENT BLOCKED")
             print("SOURCE:", source_username)
             print("TEXT:", original_text[:300])
-            return True
+            return True, False
         print("\n" + "=" * 60)
         print("📰 NEW NEWS")
         print("SOURCE:", source_username)
@@ -322,6 +325,8 @@ async def process_message(
         print(original_text[:500])
 
         post = create_post(original_text)
+        show_buttons = ((post_count + 1) % BUTTON_INTERVAL == 0)
+        buttons = PUSH_BUTTONS if show_buttons else None
 
         # -------------------------------------------------
         # MEDIA
@@ -339,7 +344,7 @@ async def process_message(
                     media,
                     caption=post,
                     parse_mode="html",
-                    buttons=PUSH_BUTTONS,
+                    buttons=buttons,
                     force_document=False
                 )
 
@@ -350,7 +355,7 @@ async def process_message(
                 except Exception:
                     pass
 
-                return True
+                return True, True
 
             print("⚠ Media download failed")
 
@@ -363,18 +368,18 @@ async def process_message(
                 DESTINATION_CHANNEL,
                 post,
                 parse_mode="html",
-                buttons=PUSH_BUTTONS
+                buttons=buttons
             )
 
             print("✅ TEXT POSTED TO", DESTINATION_CHANNEL)
-            return True
+            return True, True
 
         print("⚠ Message contained no usable text")
-        return True
+        return True, False
 
     except Exception as e:
         print("❌ ERROR PROCESSING MESSAGE:", e)
-        return False
+        return False, False
 
 
 # =========================================================
@@ -421,13 +426,15 @@ async def check_channel(
         print(f"📥 Found {len(messages)} new message(s)")
 
         highest_successful_id = last_id
+        post_count = int(state.get("_successful_posts", 0))
 
         for message in messages:
-            success = await process_message(
+            success, posted = await process_message(
                 user_client,
                 bot_client,
                 message,
-                username
+                username,
+                post_count
             )
 
             if success:
@@ -435,6 +442,13 @@ async def check_channel(
                     highest_successful_id,
                     message.id
                 )
+
+                # Count only successfully published news posts.
+                if posted:
+                    post_count += 1
+                    state["_successful_posts"] = post_count
+                    if post_count % BUTTON_INTERVAL == 0:
+                        print(f"🔘 Push buttons added to post #{post_count}")
 
                 await asyncio.sleep(2)
 
