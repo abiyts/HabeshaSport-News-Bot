@@ -29,6 +29,37 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Check Facebook secrets
+        env:
+          FB_ETHIO_SPORT_PAGE_ID: ${{ secrets.FB_ETHIO_SPORT_PAGE_ID }}
+          FB_ETHIO_SPORT_PAGE_TOKEN: ${{ secrets.FB_ETHIO_SPORT_PAGE_TOKEN }}
+          FB_ARSENAL_PAGE_ID: ${{ secrets.FB_ARSENAL_PAGE_ID }}
+          FB_ARSENAL_PAGE_TOKEN: ${{ secrets.FB_ARSENAL_PAGE_TOKEN }}
+        run: |
+          if [ -n "$FB_ETHIO_SPORT_PAGE_ID" ]; then
+            echo "✅ Ethio Sport Page ID is configured"
+          else
+            echo "❌ Ethio Sport Page ID is MISSING"
+          fi
+
+          if [ -n "$FB_ETHIO_SPORT_PAGE_TOKEN" ]; then
+            echo "✅ Ethio Sport Page Token is configured"
+          else
+            echo "❌ Ethio Sport Page Token is MISSING"
+          fi
+
+          if [ -n "$FB_ARSENAL_PAGE_ID" ]; then
+            echo "✅ Arsenal Page ID is configured"
+          else
+            echo "❌ Arsenal Page ID is MISSING"
+          fi
+
+          if [ -n "$FB_ARSENAL_PAGE_TOKEN" ]; then
+            echo "✅ Arsenal Page Token is configured"
+          else
+            echo "❌ Arsenal Page Token is MISSING"
+          fi
+
       - name: Run Telegram bot
         env:
           API_ID: ${{ secrets.API_ID }}
