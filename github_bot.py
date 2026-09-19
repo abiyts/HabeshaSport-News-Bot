@@ -616,132 +616,465 @@ def translate_to_amharic(text):
     return translated_text.strip()
 
 # =========================================================
-# ETHIOPIAN CALENDAR DATE + ETHIOPIA LOCAL TIME
+# FOOTBALL TRANSLATION
+# ENGLISH → AMHARIC
+# + TIME ZONE CONVERSION → ETHIOPIA
 # =========================================================
 
-def get_ethiopian_date_and_session():
+def translate_to_amharic(text):
 
-    # Ethiopia is UTC+3.
-    # GitHub Actions normally runs in UTC, so we explicitly
-    # convert UTC to Ethiopia time here.
-
-    utc_now = datetime.now(timezone.utc)
-
-    ethiopia_now = (
-        utc_now + timedelta(hours=3)
-    )
-
-    # Remove timezone information for calendar calculations
-    now = ethiopia_now.replace(tzinfo=None)
-
-    year = now.year
-
-    # Ethiopian New Year:
-    # September 11 normally
-    # September 12 when the following Gregorian year is leap
-
-    new_year_day = (
-        12
-        if (year + 1) % 4 == 0
-        else 11
-    )
-
-    new_year = datetime(
-        year,
-        9,
-        new_year_day
-    )
-
-    if now < new_year:
-
-        eth_year = year - 9
-
-        previous_gregorian_year = year - 1
-
-        previous_new_year_day = (
-            12
-            if year % 4 == 0
-            else 11
-        )
-
-        new_year = datetime(
-            previous_gregorian_year,
-            9,
-            previous_new_year_day
-        )
-
-    else:
-
-        eth_year = year - 8
-
-    days = (
-        now - new_year
-    ).days
-
-    eth_month = (
-        days // 30
-    ) + 1
-
-    eth_day = (
-        days % 30
-    ) + 1
-
-    months = {
-        1: "መስከረም",
-        2: "ጥቅምት",
-        3: "ኅዳር",
-        4: "ታኅሣሥ",
-        5: "ጥር",
-        6: "የካቲት",
-        7: "መጋቢት",
-        8: "ሚያዝያ",
-        9: "ግንቦት",
-        10: "ሰኔ",
-        11: "ሐምሌ",
-        12: "ነሐሴ",
-        13: "ጳጉሜን"
-    }
+    if not text:
+        return ""
 
     # =====================================================
-    # ETHIOPIA LOCAL TIME
+    # CONVERT TIMES TO ETHIOPIA TIME
     # =====================================================
 
-    hour = now.hour
+    def convert_times_to_ethiopia(text):
 
-    if 6 <= hour < 12:
+        # Common football-news timezone offsets.
+        # Ethiopia = UTC+3
 
-        session = "ጠዋት | Morning"
+        timezone_offsets = {
 
-    elif 12 <= hour < 14:
+            "UTC": 0,
+            "GMT": 0,
 
-        session = "እኩለ ቀን | Midday"
+            "EAT": 3,
 
-    elif 14 <= hour < 18:
+            "WAT": 1,
+            "CAT": 2,
 
-        session = "ከሰዓት | Afternoon"
+            "CET": 1,
+            "CEST": 2,
 
-    elif 18 <= hour < 21:
+            "BST": 1,
 
-        session = "ማታ | Evening"
+            "IST": 5.5,
+        }
 
-    else:
+        # Detect examples such as:
+        #
+        # 14:00 GMT
+        # 14:00 UTC
+        # 2:00 PM GMT
+        # 2 PM UTC
+        # 18:30 CET
+        # 9:00 PM EAT
 
-        session = "ሌሊት | Night"
+        pattern = re.compile(
+            r'\b'
+            r'(\d{1,2})'
+            r'(?::(\d{2}))?'
+            r'\s*'
+            r'(AM|PM|am|pm)?'
+            r'\s*'
+            r'(UTC|GMT|EAT|WAT|CAT|CET|CEST|BST|IST)'
+            r'\b',
+            re.IGNORECASE
+        )
 
-    # Ethiopia local clock
-    # Example: 02:30 PM
+        def replace_time(match):
 
-    time_text = now.strftime(
-        "%I:%M %p"
+            hour = int(
+                match.group(1)
+            )
+
+            minute = (
+                int(match.group(2))
+                if match.group(2)
+                else 0
+            )
+
+            ampm = match.group(3)
+
+            zone = (
+                match.group(4)
+                .upper()
+            )
+
+            # ---------------------------------------------
+            # Convert AM / PM to 24-hour time
+            # ---------------------------------------------
+
+            if ampm:
+
+                ampm = ampm.upper()
+
+                if ampm == "PM" and hour != 12:
+
+                    hour += 12
+
+                elif ampm == "AM" and hour == 12:
+
+                    hour = 0
+
+            # ---------------------------------------------
+            # Source timezone
+            # ---------------------------------------------
+
+            source_offset = (
+                timezone_offsets.get(
+                    zone,
+                    0
+                )
+            )
+
+            # Ethiopia = UTC+3
+            ethiopia_offset = 3
+
+            # ---------------------------------------------
+            # Convert to Ethiopia time
+            # ---------------------------------------------
+
+            total_minutes = (
+
+                hour * 60
+
+                + minute
+
+                + (
+                    ethiopia_offset
+                    - source_offset
+                ) * 60
+            )
+
+            # Handle crossing midnight
+            total_minutes %= (
+                24 * 60
+            )
+
+            eth_hour = (
+                total_minutes // 60
+            )
+
+            eth_minute = (
+                total_minutes % 60
+            )
+
+            # Keep the converted time clearly marked
+            return (
+                f"{eth_hour:02d}:"
+                f"{eth_minute:02d} "
+                f"Ethiopia time"
+            )
+
+        return pattern.sub(
+            replace_time,
+            text
+        )
+
+    # =====================================================
+    # CONVERT TIME BEFORE TRANSLATION
+    # =====================================================
+
+    text = convert_times_to_ethiopia(
+        text
     )
 
-    return (
-        f"{months[eth_month]} "
-        f"{eth_day}, "
-        f"{eth_year}",
-        session,
-        time_text
+    # =====================================================
+    # FOOTBALL WORDS / PHRASES
+    # THAT MUST STAY IN ENGLISH
+    # =====================================================
+
+    keep_words = [
+
+        # -----------------------------------------------
+        # Match / result
+        # -----------------------------------------------
+
+        "Here we go",
+        "Fulltime",
+        "Full-time",
+        "Match Week",
+        "Assist",
+
+        # -----------------------------------------------
+        # Competitions
+        # -----------------------------------------------
+
+        "Premier League",
+        "Champions League",
+        "Europa League",
+        "Conference League",
+
+        # -----------------------------------------------
+        # Transfer terminology
+        # -----------------------------------------------
+
+        "Transfer",
+        "Transfers",
+        "Medical",
+        "Agreement",
+        "Talks",
+        "Bid",
+        "Deal",
+        "Contract",
+        "Loan",
+
+        # -----------------------------------------------
+        # English clubs
+        # -----------------------------------------------
+
+        "Manchester City",
+        "Manchester United",
+        "Liverpool",
+        "Arsenal",
+        "Chelsea",
+        "Tottenham",
+        "Newcastle United",
+        "Aston Villa",
+        "West Ham United",
+        "Crystal Palace",
+        "Brighton",
+        "Everton",
+        "Nottingham Forest",
+        "Brentford",
+        "Fulham",
+        "Bournemouth",
+        "Wolverhampton Wanderers",
+        "Wolves",
+        "Leicester City",
+
+        # -----------------------------------------------
+        # European clubs
+        # -----------------------------------------------
+
+        "Real Madrid",
+        "Barcelona",
+        "Bayern Munich",
+        "Paris Saint-Germain",
+        "PSG",
+        "Inter Milan",
+        "AC Milan",
+        "Juventus",
+        "Atletico Madrid",
+        "Borussia Dortmund",
+    ]
+
+    # =====================================================
+    # PROTECT IMPORTANT ENGLISH FOOTBALL TERMS
+    # =====================================================
+
+    protected = {}
+
+    counter = 0
+
+    # Longest phrases first
+    keep_words = sorted(
+        keep_words,
+        key=len,
+        reverse=True
     )
+
+    for word in keep_words:
+
+        pattern = re.compile(
+            re.escape(word),
+            re.IGNORECASE
+        )
+
+        def protect(match):
+
+            nonlocal counter
+
+            counter += 1
+
+            key = (
+                f"FOOTBALL_KEEP_{counter}_X"
+            )
+
+            protected[key] = (
+                match.group(0)
+            )
+
+            return key
+
+        text = pattern.sub(
+            protect,
+            text
+        )
+
+    # =====================================================
+    # SPLIT NEWS INTO SENTENCES
+    # =====================================================
+
+    sentences = re.split(
+        r'(?<=[.!?])\s+',
+        text.strip()
+    )
+
+    translated_sentences = []
+
+    for sentence in sentences:
+
+        sentence = sentence.strip()
+
+        if not sentence:
+            continue
+
+        chunks = []
+
+        # Keep Google Translate requests reasonably short
+
+        if len(sentence) <= 900:
+
+            chunks = [
+                sentence
+            ]
+
+        else:
+
+            words = sentence.split()
+
+            current = ""
+
+            for word in words:
+
+                if (
+                    len(current)
+                    + len(word)
+                    + 1
+                    > 850
+                ):
+
+                    if current:
+
+                        chunks.append(
+                            current.strip()
+                        )
+
+                    current = word
+
+                else:
+
+                    if current:
+
+                        current += (
+                            " " + word
+                        )
+
+                    else:
+
+                        current = word
+
+            if current:
+
+                chunks.append(
+                    current.strip()
+                )
+
+        # =================================================
+        # GOOGLE TRANSLATE
+        # =================================================
+
+        for chunk in chunks:
+
+            try:
+
+                url = (
+                    "https://translate.googleapis.com/"
+                    "translate_a/single"
+                    "?client=gtx"
+                    "&sl=en"
+                    "&tl=am"
+                    "&dt=t"
+                    "&q="
+                    + urllib.parse.quote(
+                        chunk
+                    )
+                )
+
+                request = (
+                    urllib.request.Request(
+                        url,
+                        headers={
+                            "User-Agent":
+                            "Mozilla/5.0"
+                        }
+                    )
+                )
+
+                with urllib.request.urlopen(
+                    request,
+                    timeout=20
+                ) as response:
+
+                    data = (
+                        response
+                        .read()
+                        .decode("utf-8")
+                    )
+
+                result = json.loads(
+                    data
+                )
+
+                translated = ""
+
+                for part in result[0]:
+
+                    if part[0]:
+
+                        translated += (
+                            part[0]
+                        )
+
+                if translated:
+
+                    translated_sentences.append(
+                        translated.strip()
+                    )
+
+                else:
+
+                    translated_sentences.append(
+                        chunk
+                    )
+
+            except Exception as e:
+
+                print(
+                    "⚠ Translation error:",
+                    e
+                )
+
+                translated_sentences.append(
+                    chunk
+                )
+
+    # =====================================================
+    # JOIN TRANSLATED SENTENCES
+    # =====================================================
+
+    translated_text = " ".join(
+        translated_sentences
+    )
+
+    # =====================================================
+    # RESTORE ENGLISH FOOTBALL TERMS
+    # =====================================================
+
+    for key, original in protected.items():
+
+        translated_text = (
+            translated_text.replace(
+                key,
+                original
+            )
+        )
+
+    # =====================================================
+    # CLEAN EXTRA SPACES
+    # =====================================================
+
+    translated_text = re.sub(
+        r'\s+',
+        ' ',
+        translated_text
+    )
+
+    return translated_text.strip()
     
 # =========================================================
 # CREATE FINAL POST
