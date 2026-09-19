@@ -224,7 +224,8 @@ def remove_links(text):
 
 
 # =========================================================
-# TRANSLATE ENGLISH → AMHARIC
+# FOOTBALL TRANSLATION
+# ENGLISH → AMHARIC
 # =========================================================
 
 def translate_to_amharic(text):
@@ -232,61 +233,261 @@ def translate_to_amharic(text):
     if not text:
         return ""
 
-    try:
+    # -----------------------------------------------------
+    # FOOTBALL WORDS / PHRASES TO KEEP IN ENGLISH
+    # -----------------------------------------------------
 
-        url = (
-            "https://translate.googleapis.com/translate_a/single"
-            "?client=gtx"
-            "&sl=en"
-            "&tl=am"
-            "&dt=t"
-            "&q="
-            + urllib.parse.quote(text[:3000])
+    keep_words = [
+        "Here we go",
+        "Fulltime",
+        "Full-time",
+        "Match Week",
+        "Assist",
+
+        "Premier League",
+        "Champions League",
+        "Europa League",
+        "Conference League",
+
+        "Transfer",
+        "Transfers",
+        "Medical",
+        "Agreement",
+        "Talks",
+        "Bid",
+        "Deal",
+        "Contract",
+        "Loan",
+
+        "Manchester City",
+        "Manchester United",
+        "Liverpool",
+        "Arsenal",
+        "Chelsea",
+        "Tottenham",
+        "Newcastle United",
+        "Aston Villa",
+        "West Ham United",
+        "Crystal Palace",
+        "Brighton",
+        "Everton",
+        "Nottingham Forest",
+        "Brentford",
+        "Fulham",
+        "Bournemouth",
+        "Wolverhampton Wanderers",
+        "Wolves",
+        "Leicester City",
+
+        "Real Madrid",
+        "Barcelona",
+        "Bayern Munich",
+        "Paris Saint-Germain",
+        "PSG",
+        "Inter Milan",
+        "AC Milan",
+        "Juventus",
+        "Atletico Madrid",
+        "Borussia Dortmund",
+    ]
+
+    # -----------------------------------------------------
+    # PROTECT IMPORTANT ENGLISH WORDS
+    # -----------------------------------------------------
+
+    protected = {}
+
+    counter = 0
+
+    # Longest phrases first
+    keep_words = sorted(
+        keep_words,
+        key=len,
+        reverse=True
+    )
+
+    for word in keep_words:
+
+        pattern = re.compile(
+            re.escape(word),
+            re.IGNORECASE
         )
 
-        request = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "Mozilla/5.0"
-            }
-        )
+        def protect(match):
 
-        with urllib.request.urlopen(
-            request,
-            timeout=20
-        ) as response:
+            nonlocal counter
 
-            data = response.read().decode(
-                "utf-8"
+            counter += 1
+
+            key = (
+                f"FOOTBALLKEEP{counter}X"
             )
 
-        result = json.loads(data)
+            protected[key] = match.group(0)
 
-        translated = ""
+            return key
 
-        for part in result[0]:
-
-            if part[0]:
-                translated += part[0]
-
-        if translated:
-            return translated.strip()
-
-        print(
-            "⚠ Google translation returned empty result"
+        text = pattern.sub(
+            protect,
+            text
         )
 
-        return text
+    # -----------------------------------------------------
+    # SPLIT LONG NEWS INTO SENTENCES
+    # -----------------------------------------------------
 
-    except Exception as e:
+    sentences = re.split(
+        r'(?<=[.!?])\s+',
+        text.strip()
+    )
 
-        print(
-            "⚠ Google translation error:",
-            e
+    translated_sentences = []
+
+    for sentence in sentences:
+
+        sentence = sentence.strip()
+
+        if not sentence:
+            continue
+
+        # Keep translation requests reasonably short
+        chunks = []
+
+        if len(sentence) <= 1000:
+
+            chunks = [sentence]
+
+        else:
+
+            words = sentence.split()
+
+            current = ""
+
+            for word in words:
+
+                if len(current) + len(word) + 1 > 900:
+
+                    if current:
+                        chunks.append(
+                            current.strip()
+                        )
+
+                    current = word
+
+                else:
+
+                    if current:
+                        current += " " + word
+                    else:
+                        current = word
+
+            if current:
+                chunks.append(
+                    current.strip()
+                )
+
+        # -------------------------------------------------
+        # TRANSLATE EACH SMALL SECTION
+        # -------------------------------------------------
+
+        for chunk in chunks:
+
+            try:
+
+                url = (
+                    "https://translate.googleapis.com/"
+                    "translate_a/single"
+                    "?client=gtx"
+                    "&sl=en"
+                    "&tl=am"
+                    "&dt=t"
+                    "&q="
+                    + urllib.parse.quote(
+                        chunk
+                    )
+                )
+
+                request = urllib.request.Request(
+                    url,
+                    headers={
+                        "User-Agent":
+                        "Mozilla/5.0"
+                    }
+                )
+
+                with urllib.request.urlopen(
+                    request,
+                    timeout=20
+                ) as response:
+
+                    data = (
+                        response
+                        .read()
+                        .decode("utf-8")
+                    )
+
+                result = json.loads(data)
+
+                translated = ""
+
+                for part in result[0]:
+
+                    if part[0]:
+                        translated += part[0]
+
+                if translated:
+
+                    translated_sentences.append(
+                        translated.strip()
+                    )
+
+                else:
+
+                    translated_sentences.append(
+                        chunk
+                    )
+
+            except Exception as e:
+
+                print(
+                    "⚠ Translation error:",
+                    e
+                )
+
+                # Keep original sentence if
+                # translation fails.
+                translated_sentences.append(
+                    chunk
+                )
+
+    translated_text = " ".join(
+        translated_sentences
+    )
+
+    # -----------------------------------------------------
+    # RESTORE ENGLISH FOOTBALL TERMS
+    # -----------------------------------------------------
+
+    for key, original in protected.items():
+
+        translated_text = (
+            translated_text.replace(
+                key,
+                original
+            )
         )
 
-        return text
+    # -----------------------------------------------------
+    # CLEAN UP
+    # -----------------------------------------------------
 
+    translated_text = re.sub(
+        r'\s+',
+        ' ',
+        translated_text
+    )
+
+    return translated_text.strip()
 
 # =========================================================
 # ETHIOPIAN CALENDAR DATE
