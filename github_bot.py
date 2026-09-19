@@ -30,22 +30,6 @@ DEFAULT_DESTINATION = "@habeshasport"
 
 
 # =========================================================
-# FACEBOOK DESTINATIONS
-# =========================================================
-# These are the Facebook Pages that will receive the SAME final post
-# that the bot publishes to the matching Telegram destination.
-#
-# Page URLs are recorded now. Facebook Page IDs and Page access tokens
-# will be added securely through GitHub Secrets before live posting.
-
-FACEBOOK_DESTINATIONS = {
-    "@habeshasport": "https://web.facebook.com/ethiosportlive",
-    "@arsenaletgunners": "https://web.facebook.com/profile.php?id=100070112416970",
-    "@manunitedethiopia": "https://web.facebook.com/profile.php?id=100095014544008",
-}
-
-
-# =========================================================
 # CLUB SOURCE → CLUB DESTINATION
 # =========================================================
 
@@ -104,6 +88,206 @@ GENERAL_SOURCES = [
 # =========================================================
 
 SOURCE_CHANNELS = GENERAL_SOURCES + list(SOURCE_ROUTES.keys())
+
+
+# =========================================================
+# FACEBOOK DESTINATIONS
+# =========================================================
+
+FACEBOOK_GRAPH_VERSION = "v26.0"
+
+FACEBOOK_DESTINATIONS = {
+    DEFAULT_DESTINATION: {
+        "name": "Ethio Sport ኢትዮ ስፖርት",
+        "page_id_env": "FB_ETHIO_SPORT_PAGE_ID",
+        "token_env": "FB_ETHIO_SPORT_PAGE_TOKEN",
+    },
+    "@arsenaletgunners": {
+        "name": "Arsenal",
+        "page_id_env": "FB_ARSENAL_PAGE_ID",
+        "token_env": "FB_ARSENAL_PAGE_TOKEN",
+    },
+}
+
+
+def facebook_config(destination):
+    config = FACEBOOK_DESTINATIONS.get(destination)
+
+    if not config:
+        return None
+
+    page_id = os.environ.get(config["page_id_env"], "").strip()
+    token = os.environ.get(config["token_env"], "").strip()
+
+    if not page_id or not token:
+        print(
+            "ℹ Facebook is not configured for",
+            destination,
+            "- Telegram will continue normally."
+        )
+        return None
+
+    return config, page_id, token
+
+
+def facebook_plain_text(post):
+    if not post:
+        return ""
+
+    text = re.sub(r"<[^>]+>", "", post)
+    text = html.unescape(text)
+    return text.strip()
+
+
+def facebook_request(endpoint, fields, files=None):
+    boundary = "----HabeshaSportBoundary"
+    body = bytearray()
+
+    for key, value in fields.items():
+        body.extend(f"--{boundary}\r\n".encode())
+        body.extend(
+            f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode()
+        )
+        body.extend(str(value).encode("utf-8"))
+        body.extend(b"\r\n")
+
+    if files:
+        for key, file_info in files.items():
+            filename, content_type, data = file_info
+            body.extend(f"--{boundary}\r\n".encode())
+            body.extend(
+                (
+                    f'Content-Disposition: form-data; '
+                    f'name="{key}"; filename="{filename}"\r\n'
+                ).encode()
+            )
+            body.extend(f"Content-Type: {content_type}\r\n\r\n".encode())
+            body.extend(data)
+            body.extend(b"\r\n")
+
+    body.extend(f"--{boundary}--\r\n".encode())
+
+    request = urllib.request.Request(
+        endpoint,
+        data=bytes(body),
+        method="POST",
+        headers={
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "User-Agent": "Mozilla/5.0",
+        },
+    )
+
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def facebook_post_text(destination, post):
+    config = facebook_config(destination)
+
+    if not config:
+        return False
+
+    page_config, page_id, token = config
+    message = facebook_plain_text(post)
+
+    if not message:
+        return False
+
+    endpoint = (
+        f"https://graph.facebook.com/"
+        f"{FACEBOOK_GRAPH_VERSION}/{page_id}/feed"
+    )
+
+    try:
+        result = facebook_request(
+            endpoint,
+            {
+                "message": message,
+                "access_token": token,
+            },
+        )
+
+        if result.get("id"):
+            print(
+                "✅ FACEBOOK TEXT POSTED TO",
+                page_config["name"]
+            )
+            return True
+
+        print("⚠ Facebook returned no post ID:", result)
+        return False
+
+    except Exception as e:
+        print("⚠ FACEBOOK ERROR:", e)
+        return False
+
+
+def facebook_post_media(destination, media_path, post):
+    config = facebook_config(destination)
+
+    if not config:
+        return False
+
+    page_config, page_id, token = config
+
+    try:
+        with open(media_path, "rb") as f:
+            data = f.read()
+
+        filename = os.path.basename(media_path)
+        lower_name = filename.lower()
+
+        if lower_name.endswith((".mp4", ".mov", ".m4v", ".webm")):
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/{page_id}/videos"
+            )
+            content_type = "video/mp4"
+            file_field = "source"
+            text_field = "description"
+        elif lower_name.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/{page_id}/photos"
+            )
+            content_type = "image/jpeg"
+            file_field = "source"
+            text_field = "caption"
+        else:
+            print("ℹ Facebook media type not supported:", filename)
+            return False
+
+        fields = {
+            "access_token": token,
+            "published": "true",
+            text_field: facebook_plain_text(post),
+        }
+
+        result = facebook_request(
+            endpoint,
+            fields,
+            {
+                file_field: (
+                    filename,
+                    content_type,
+                    data,
+                )
+            },
+        )
+
+        if result.get("id") or result.get("post_id"):
+            print(
+                "✅ FACEBOOK MEDIA POSTED TO",
+                page_config["name"]
+            )
+            return True
+
+        print("⚠ Facebook media returned:", result)
+        return False
+
+    except Exception as e:
+        print("⚠ FACEBOOK MEDIA ERROR:", e)
+        return False
 
 
 # =========================================================
@@ -682,17 +866,12 @@ async def process_message(
 ):
 
     try:
-
-        original_text = (
-            message.message or ""
-        )
+        original_text = message.message or ""
 
         if is_advertisement(message):
-
             print("🚫 ADVERTISEMENT BLOCKED")
             print("SOURCE:", source_username)
             print("TEXT:", original_text[:300])
-
             return True, False
 
         print("\n" + "=" * 60)
@@ -709,21 +888,21 @@ async def process_message(
             (post_count + 1) % BUTTON_INTERVAL == 0
         )
 
-        buttons = (
-            PUSH_BUTTONS
-            if show_buttons
-            else None
-        )
+        buttons = PUSH_BUTTONS if show_buttons else None
+
+        media = None
+
+        # -------------------------------------------------
+        # TELEGRAM POST
+        # -------------------------------------------------
 
         if message.media:
-
             print("📷 Media detected")
             print("⬇ Downloading media...")
 
             media = await user_client.download_media(message)
 
             if media:
-
                 await bot_client.send_file(
                     destination,
                     media,
@@ -735,6 +914,14 @@ async def process_message(
 
                 print("✅ MEDIA POSTED TO", destination)
 
+                # Facebook is attempted only after Telegram succeeds.
+                # Facebook failure does NOT fail the Telegram message.
+                facebook_post_media(
+                    destination,
+                    media,
+                    post
+                )
+
                 try:
                     os.remove(media)
                 except Exception:
@@ -745,7 +932,6 @@ async def process_message(
             print("⚠ Media download failed")
 
         if post:
-
             await bot_client.send_message(
                 destination,
                 post,
@@ -755,16 +941,19 @@ async def process_message(
 
             print("✅ TEXT POSTED TO", destination)
 
+            # Facebook is attempted only after Telegram succeeds.
+            facebook_post_text(
+                destination,
+                post
+            )
+
             return True, True
 
         print("⚠ Message contained no usable text")
-
         return True, False
 
     except Exception as e:
-
         print("❌ ERROR PROCESSING MESSAGE:", e)
-
         return False, False
 
 
