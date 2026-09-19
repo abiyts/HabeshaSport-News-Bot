@@ -30,6 +30,22 @@ DEFAULT_DESTINATION = "@habeshasport"
 
 
 # =========================================================
+# FACEBOOK DESTINATIONS
+# =========================================================
+# These are the Facebook Pages that will receive the SAME final post
+# that the bot publishes to the matching Telegram destination.
+#
+# Page URLs are recorded now. Facebook Page IDs and Page access tokens
+# will be added securely through GitHub Secrets before live posting.
+
+FACEBOOK_DESTINATIONS = {
+    "@habeshasport": "https://web.facebook.com/ethiosportlive",
+    "@arsenaletgunners": "https://web.facebook.com/profile.php?id=100070112416970",
+    "@manunitedethiopia": "https://web.facebook.com/profile.php?id=100095014544008",
+}
+
+
+# =========================================================
 # CLUB SOURCE → CLUB DESTINATION
 # =========================================================
 
