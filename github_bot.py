@@ -4,6 +4,7 @@ import json
 import html
 import urllib.parse
 import urllib.request
+import urllib.error
 import asyncio
 from datetime import datetime, timezone, timedelta
 
@@ -34,30 +35,51 @@ DEFAULT_DESTINATION = "@habeshasport"
 # =========================================================
 
 SOURCE_ROUTES = {
+
+    # -------------------------
+    # ARSENAL
+    # -------------------------
+
     "@arsenal_gunners_london": "@arsenaletgunners",
     "@Arsenalc": "@arsenaletgunners",
     "@gunnersfooty": "@arsenaletgunners",
     "@GUNNERS": "@arsenaletgunners",
+    "@ZENA_ARSENAL": "@arsenaletgunners",
+    "@ETHIO_ARSENAL": "@arsenaletgunners",
+
+    # -------------------------
+    # LIVERPOOL
+    # -------------------------
 
     "@LiverpoolFCNews": "@liverpoolethiop",
     "@liverpool": "@liverpoolethiop",
     "@lfconline": "@liverpoolethiop",
 
+    # -------------------------
+    # MAN CITY
+    # -------------------------
+
     "@Manchester_City": "@mancitynewset",
     "@manchester_city_cf": "@mancitynewset",
     "@mancity247": "@mancitynewset",
+
+    # -------------------------
+    # CHELSEA
+    # -------------------------
 
     "@Chelsea_fc_worldwide": "@chelseafcet",
     "@chelseafcnews01": "@chelseafcet",
     "@chelseaanalysis": "@chelseafcet",
     "@chelseasunsport": "@chelseafcet",
 
+    # -------------------------
+    # MAN UNITED
+    # -------------------------
+
     "@ManchesterUnited": "@manunitedethiopia",
     "@Empire_MU": "@manunitedethiopia",
     "@manchester_united_uk": "@manunitedethiopia",
     "@manchesterunitedsunsport": "@manunitedethiopia",
-    "@ZENA_ARSENAL": "@arsenaletgunners",
-    "@ETHIO_ARSENAL": "@arsenaletgunners",
     "@Manchester_Unitedfanns": "@manunitedethiopia",
     "@man_united_ethio_fan": "@manunitedethiopia",
 }
@@ -68,9 +90,11 @@ SOURCE_ROUTES = {
 # =========================================================
 
 GENERAL_SOURCES = [
+
     "@br_football_news",
     "@Football433_uk",
     "@Espnfc_news",
+    "@espndc_news",
     "@Premier_League_Update",
     "@Espn_Football_News_UK",
     "@squawka_football_news",
@@ -79,6 +103,9 @@ GENERAL_SOURCES = [
     "@mtransfers",
     "@sport_hub_football",
     "@transfer_news_football",
+
+    # Newly added sources
+    "@goal_sport_football",
 ]
 
 
@@ -86,7 +113,9 @@ GENERAL_SOURCES = [
 # ALL SOURCE CHANNELS
 # =========================================================
 
-SOURCE_CHANNELS = GENERAL_SOURCES + list(SOURCE_ROUTES.keys())
+SOURCE_CHANNELS = GENERAL_SOURCES + list(
+    SOURCE_ROUTES.keys()
+)
 
 
 # =========================================================
@@ -96,6 +125,7 @@ SOURCE_CHANNELS = GENERAL_SOURCES + list(SOURCE_ROUTES.keys())
 FACEBOOK_GRAPH_VERSION = "v26.0"
 
 FACEBOOK_DESTINATIONS = {
+
     DEFAULT_DESTINATION: {
         "name": "Ethio Sport ኢትዮ ስፖርት",
         "page_id_env": "FB_ETHIO_SPORT_PAGE_ID",
@@ -110,9 +140,15 @@ FACEBOOK_DESTINATIONS = {
 }
 
 
+# =========================================================
+# FACEBOOK CONFIG
+# =========================================================
+
 def facebook_config(destination):
 
-    config = FACEBOOK_DESTINATIONS.get(destination)
+    config = FACEBOOK_DESTINATIONS.get(
+        destination
+    )
 
     if not config:
         return None
@@ -140,6 +176,10 @@ def facebook_config(destination):
     return config, page_id, token
 
 
+# =========================================================
+# FACEBOOK TEXT CLEANING
+# =========================================================
+
 def facebook_plain_text(post):
 
     if not post:
@@ -151,10 +191,16 @@ def facebook_plain_text(post):
         post
     )
 
-    text = html.unescape(text)
+    text = html.unescape(
+        text
+    )
 
     return text.strip()
 
+
+# =========================================================
+# FACEBOOK GRAPH REQUEST
+# =========================================================
 
 def facebook_request(
     endpoint,
@@ -162,9 +208,16 @@ def facebook_request(
     files=None
 ):
 
-    boundary = "----HabeshaSportBoundary"
+    boundary = (
+        "----HabeshaSportBoundary"
+        + str(abs(hash(endpoint)))
+    )
 
     body = bytearray()
+
+    # -----------------------------------------------------
+    # TEXT FIELDS
+    # -----------------------------------------------------
 
     for key, value in fields.items():
 
@@ -180,16 +233,26 @@ def facebook_request(
         )
 
         body.extend(
-            str(value).encode("utf-8")
+            str(value).encode(
+                "utf-8"
+            )
         )
 
-        body.extend(b"\r\n")
+        body.extend(
+            b"\r\n"
+        )
+
+    # -----------------------------------------------------
+    # FILE FIELDS
+    # -----------------------------------------------------
 
     if files:
 
         for key, file_info in files.items():
 
-            filename, content_type, data = file_info
+            filename, content_type, data = (
+                file_info
+            )
 
             body.extend(
                 f"--{boundary}\r\n".encode()
@@ -204,12 +267,19 @@ def facebook_request(
             )
 
             body.extend(
-                f"Content-Type: {content_type}\r\n\r\n".encode()
+                (
+                    f"Content-Type: "
+                    f"{content_type}\r\n\r\n"
+                ).encode()
             )
 
-            body.extend(data)
+            body.extend(
+                data
+            )
 
-            body.extend(b"\r\n")
+            body.extend(
+                b"\r\n"
+            )
 
     body.extend(
         f"--{boundary}--\r\n".encode()
@@ -227,29 +297,123 @@ def facebook_request(
         },
     )
 
-    with urllib.request.urlopen(
-        request,
-        timeout=60
-    ) as response:
+    try:
 
-        return json.loads(
-            response.read().decode("utf-8")
+        with urllib.request.urlopen(
+            request,
+            timeout=90
+        ) as response:
+
+            response_data = (
+                response.read()
+                .decode("utf-8")
+            )
+
+            return json.loads(
+                response_data
+            )
+
+    except urllib.error.HTTPError as e:
+
+        print("")
+        print(
+            "❌ FACEBOOK GRAPH API ERROR"
         )
 
+        print(
+            "HTTP STATUS:",
+            e.code
+        )
+
+        try:
+
+            error_body = (
+                e.read()
+                .decode("utf-8")
+            )
+
+            print(
+                "RESPONSE:"
+            )
+
+            print(
+                error_body
+            )
+
+        except Exception as read_error:
+
+            print(
+                "Could not read "
+                "Facebook error:",
+                read_error
+            )
+
+        print(
+            "END FACEBOOK ERROR"
+        )
+
+        return {
+            "error": {
+                "http_status": e.code
+            }
+        }
+
+    except urllib.error.URLError as e:
+
+        print("")
+        print(
+            "❌ FACEBOOK CONNECTION ERROR:"
+        )
+
+        print(
+            e
+        )
+
+        return {
+            "error": {
+                "connection": str(e)
+            }
+        }
+
+    except Exception as e:
+
+        print("")
+        print(
+            "❌ FACEBOOK REQUEST ERROR:"
+        )
+
+        print(
+            e
+        )
+
+        return {
+            "error": {
+                "request": str(e)
+            }
+        }
+
+
+# =========================================================
+# FACEBOOK TEXT POST
+# =========================================================
 
 def facebook_post_text(
     destination,
     post
 ):
 
-    config = facebook_config(destination)
+    config = facebook_config(
+        destination
+    )
 
     if not config:
         return False
 
     page_config, page_id, token = config
 
-    message = facebook_plain_text(post)
+    message = facebook_plain_text(
+        post
+    )
 
     if not message:
         return False
@@ -280,7 +444,10 @@ def facebook_post_text(
             return True
 
         print(
-            "⚠ Facebook returned no post ID:",
+            "⚠ Facebook text returned:"
+        )
+
+        print(
             result
         )
 
@@ -289,12 +456,16 @@ def facebook_post_text(
     except Exception as e:
 
         print(
-            "⚠ FACEBOOK ERROR:",
+            "⚠ FACEBOOK TEXT ERROR:",
             e
         )
 
         return False
 
+
+# =========================================================
+# FACEBOOK MEDIA POST
+# =========================================================
 
 def facebook_post_media(
     destination,
@@ -302,7 +473,9 @@ def facebook_post_media(
     post
 ):
 
-    config = facebook_config(destination)
+    config = facebook_config(
+        destination
+    )
 
     if not config:
         return False
@@ -324,13 +497,12 @@ def facebook_post_media(
 
         lower_name = filename.lower()
 
+        # =================================================
+        # VIDEO
+        # =================================================
+
         if lower_name.endswith(
-            (
-                ".mp4",
-                ".mov",
-                ".m4v",
-                ".webm"
-            )
+            ".mp4"
         ):
 
             endpoint = (
@@ -346,12 +518,61 @@ def facebook_post_media(
             text_field = "description"
 
         elif lower_name.endswith(
+            ".mov"
+        ):
+
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/videos"
+            )
+
+            content_type = "video/quicktime"
+
+            file_field = "source"
+
+            text_field = "description"
+
+        elif lower_name.endswith(
+            ".m4v"
+        ):
+
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/videos"
+            )
+
+            content_type = "video/x-m4v"
+
+            file_field = "source"
+
+            text_field = "description"
+
+        elif lower_name.endswith(
+            ".webm"
+        ):
+
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/videos"
+            )
+
+            content_type = "video/webm"
+
+            file_field = "source"
+
+            text_field = "description"
+
+        # =================================================
+        # JPG / JPEG
+        # =================================================
+
+        elif lower_name.endswith(
             (
                 ".jpg",
-                ".jpeg",
-                ".png",
-                ".gif",
-                ".webp"
+                ".jpeg"
             )
         ):
 
@@ -367,20 +588,104 @@ def facebook_post_media(
 
             text_field = "caption"
 
+        # =================================================
+        # PNG
+        # =================================================
+
+        elif lower_name.endswith(
+            ".png"
+        ):
+
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/photos"
+            )
+
+            content_type = "image/png"
+
+            file_field = "source"
+
+            text_field = "caption"
+
+        # =================================================
+        # GIF
+        # =================================================
+
+        elif lower_name.endswith(
+            ".gif"
+        ):
+
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/photos"
+            )
+
+            content_type = "image/gif"
+
+            file_field = "source"
+
+            text_field = "caption"
+
+        # =================================================
+        # WEBP
+        # =================================================
+
+        elif lower_name.endswith(
+            ".webp"
+        ):
+
+            endpoint = (
+                f"https://graph.facebook.com/"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/photos"
+            )
+
+            content_type = "image/webp"
+
+            file_field = "source"
+
+            text_field = "caption"
+
         else:
 
             print(
-                "ℹ Facebook media type not supported:",
+                "ℹ Facebook media type "
+                "not supported:",
                 filename
             )
 
             return False
 
+        caption = facebook_plain_text(
+            post
+        )
+
         fields = {
             "access_token": token,
             "published": "true",
-            text_field: facebook_plain_text(post),
+            text_field: caption,
         }
+
+        print(
+            "📘 Sending media to Facebook..."
+        )
+
+        print(
+            "Facebook destination:",
+            page_config["name"]
+        )
+
+        print(
+            "File:",
+            filename
+        )
+
+        print(
+            "Content-Type:",
+            content_type
+        )
 
         result = facebook_request(
             endpoint,
@@ -407,7 +712,10 @@ def facebook_post_media(
             return True
 
         print(
-            "⚠ Facebook media returned:",
+            "⚠ Facebook media returned:"
+        )
+
+        print(
             result
         )
 
@@ -430,31 +738,37 @@ def facebook_post_media(
 BUTTON_INTERVAL = 10
 
 PUSH_BUTTONS = [
+
     [
         Button.url(
             "Man City ሲቲ",
             "https://t.me/mancitynewset"
         ),
+
         Button.url(
             "Liverpool ሊቨርፑል",
             "https://t.me/liverpoolethiop"
         )
     ],
+
     [
         Button.url(
             "Arsenal አርሰናል",
             "https://t.me/arsenaletgunners"
         ),
+
         Button.url(
             "Man United Ethiopia",
             "https://t.me/manunitedethiopia"
         )
     ],
+
     [
         Button.url(
             "Chelsea ቼልሲ",
             "https://t.me/chelseafcet"
         ),
+
         Button.url(
             "Ethio Sport",
             "https://t.me/habeshasport"
@@ -515,7 +829,9 @@ def save_state(state):
                 ensure_ascii=False
             )
 
-        print("💾 State saved")
+        print(
+            "💾 State saved"
+        )
 
     except Exception as e:
 
@@ -534,24 +850,28 @@ def remove_links(text):
     if not text:
         return ""
 
+    # Normal URLs
     text = re.sub(
         r'https?://\S+',
         '',
         text
     )
 
+    # Telegram URLs
     text = re.sub(
         r'(https?://)?t\.me/\S+',
         '',
         text
     )
 
+    # @handles
     text = re.sub(
         r'(?<!\w)@[A-Za-z0-9_]{3,}',
         '',
         text
     )
 
+    # Extra spaces
     text = re.sub(
         r'\n\s*\n\s*\n+',
         '\n\n',
@@ -579,6 +899,7 @@ def translate_to_amharic(text):
     def convert_times_to_ethiopia(text):
 
         timezone_offsets = {
+
             "UTC": 0,
             "GMT": 0,
             "EAT": 3,
@@ -616,7 +937,10 @@ def translate_to_amharic(text):
 
             ampm = match.group(3)
 
-            zone = match.group(4).upper()
+            zone = (
+                match.group(4)
+                .upper()
+            )
 
             if ampm:
 
@@ -682,10 +1006,11 @@ def translate_to_amharic(text):
     )
 
     # =====================================================
-    # FOOTBALL WORDS / PHRASES TO KEEP IN ENGLISH
+    # FOOTBALL TERMS TO KEEP IN ENGLISH
     # =====================================================
 
     keep_words = [
+
         "Here we go",
         "Fulltime",
         "Full-time",
@@ -800,7 +1125,9 @@ def translate_to_amharic(text):
 
         if len(sentence) <= 900:
 
-            chunks = [sentence]
+            chunks = [
+                sentence
+            ]
 
         else:
 
@@ -818,6 +1145,7 @@ def translate_to_amharic(text):
                 ):
 
                     if current:
+
                         chunks.append(
                             current.strip()
                         )
@@ -827,14 +1155,17 @@ def translate_to_amharic(text):
                 else:
 
                     if current:
+
                         current += (
                             " " + word
                         )
 
                     else:
+
                         current = word
 
             if current:
+
                 chunks.append(
                     current.strip()
                 )
@@ -860,12 +1191,14 @@ def translate_to_amharic(text):
                     )
                 )
 
-                request = urllib.request.Request(
-                    url,
-                    headers={
-                        "User-Agent":
-                            "Mozilla/5.0"
-                    }
+                request = (
+                    urllib.request.Request(
+                        url,
+                        headers={
+                            "User-Agent":
+                                "Mozilla/5.0"
+                        }
+                    )
                 )
 
                 with urllib.request.urlopen(
@@ -873,8 +1206,12 @@ def translate_to_amharic(text):
                     timeout=20
                 ) as response:
 
-                    data = response.read().decode(
-                        "utf-8"
+                    data = (
+                        response
+                        .read()
+                        .decode(
+                            "utf-8"
+                        )
                     )
 
                 result = json.loads(
@@ -1010,6 +1347,7 @@ def get_ethiopian_date_and_session():
     ) + 1
 
     months = {
+
         1: "መስከረም",
         2: "ጥቅምት",
         3: "ኅዳር",
@@ -1087,7 +1425,9 @@ def get_ethiopian_date_and_session():
 
 def create_post(text):
 
-    text = remove_links(text)
+    text = remove_links(
+        text
+    )
 
     if not text:
         return ""
@@ -1136,20 +1476,77 @@ def is_advertisement(message):
         message.message or ""
     ).lower()
 
+    # =====================================================
+    # STRONG AD / BETTING WORDS
+    # =====================================================
+
     ad_words = [
+
+        # Files / downloads
         ".apk",
         ".exe",
+        ".msi",
+        ".bat",
+        ".scr",
         "download apk",
         "download now",
+        "install now",
+
+        # Betting companies
         "betwinner",
         "linebet",
         "1xbet",
+        "1x bet",
+        "melbet",
+        "monybet",
+        "betway",
+        "bet365",
+        "22bet",
+        "22 bet",
+        "bet9ja",
+        "sportybet",
+        "mostbet",
+        "parimatch",
+        "stake.com",
+
+        # Betting language
         "betting",
+        "sportsbook",
+        "sports book",
+        "place your bet",
+        "place a bet",
+        "bet now",
+        "win big",
+        "odds",
+        "free bet",
+        "freebets",
+        "prediction coupon",
+
+        # Casino
         "casino",
+        "roulette",
+        "slot games",
+        "slots",
+        "jackpot",
+
+        # Promotion
         "bonus",
         "promo code",
+        "promocode",
+        "promotion",
         "advertisement",
-        "advertising"
+        "advertising",
+        "sponsored",
+        "sponsor",
+        "special offer",
+        "limited offer",
+
+        # Gambling links / wording
+        "gambling",
+        "gaming bonus",
+        "deposit now",
+        "withdraw now",
+        "register now",
     ]
 
     for word in ad_words:
@@ -1157,6 +1554,10 @@ def is_advertisement(message):
         if word in text:
 
             return True
+
+    # =====================================================
+    # FILE NAME CHECK
+    # =====================================================
 
     if message.file:
 
@@ -1168,7 +1569,9 @@ def is_advertisement(message):
 
         if filename:
 
-            filename = filename.lower()
+            filename = (
+                filename.lower()
+            )
 
             if filename.endswith(
                 (
@@ -1182,12 +1585,19 @@ def is_advertisement(message):
 
                 return True
 
-            for word in [
+            filename_ad_words = [
+
                 "betwinner",
                 "linebet",
                 "1xbet",
-                "casino"
-            ]:
+                "melbet",
+                "monybet",
+                "casino",
+                "betting",
+                "gambling",
+            ]
+
+            for word in filename_ad_words:
 
                 if word in filename:
 
@@ -1215,7 +1625,13 @@ async def process_message(
             message.message or ""
         )
 
-        if is_advertisement(message):
+        # =================================================
+        # ADVERTISEMENT FILTER
+        # =================================================
+
+        if is_advertisement(
+            message
+        ):
 
             print(
                 "🚫 ADVERTISEMENT BLOCKED"
@@ -1282,9 +1698,9 @@ async def process_message(
 
         media = None
 
-        # -------------------------------------------------
-        # TELEGRAM POST
-        # -------------------------------------------------
+        # =================================================
+        # TELEGRAM MEDIA POST
+        # =================================================
 
         if message.media:
 
@@ -1296,8 +1712,10 @@ async def process_message(
                 "⬇ Downloading media..."
             )
 
-            media = await user_client.download_media(
-                message
+            media = (
+                await user_client.download_media(
+                    message
+                )
             )
 
             if media:
@@ -1426,9 +1844,9 @@ async def process_message(
                 "⚠ Media download failed"
             )
 
-        # -------------------------------------------------
+        # =================================================
         # TEXT ONLY POST
-        # -------------------------------------------------
+        # =================================================
 
         if post:
 
@@ -1444,9 +1862,7 @@ async def process_message(
                 destination
             )
 
-            # Facebook is attempted only
-            # after Telegram succeeds.
-
+            # Facebook after Telegram success
             facebook_post_text(
                 destination,
                 post
@@ -1508,6 +1924,10 @@ async def check_channel(
             "📢 Destination:",
             destination
         )
+
+        # =================================================
+        # FIRST TIME INITIALIZATION
+        # =================================================
 
         if channel not in state:
 
@@ -1579,10 +1999,12 @@ async def check_channel(
 
         messages = []
 
-        async for message in user_client.iter_messages(
-            entity,
-            min_id=last_id,
-            reverse=True
+        async for message in (
+            user_client.iter_messages(
+                entity,
+                min_id=last_id,
+                reverse=True
+            )
         ):
 
             messages.append(
@@ -1671,6 +2093,10 @@ async def check_channel(
 
                 break
 
+        # =================================================
+        # SAVE STATE
+        # =================================================
+
         if (
             highest_successful_id
             > last_id
@@ -1696,7 +2122,9 @@ async def check_channel(
             channel
         )
 
-        print(e)
+        print(
+            e
+        )
 
 
 # =========================================================
@@ -1720,6 +2148,10 @@ async def main():
 
     state = load_state()
 
+    # =====================================================
+    # TELEGRAM USER CLIENT
+    # =====================================================
+
     user_client = TelegramClient(
         StringSession(USER_SESSION),
         API_ID,
@@ -1729,6 +2161,10 @@ async def main():
         request_retries=10,
         auto_reconnect=True
     )
+
+    # =====================================================
+    # TELEGRAM BOT CLIENT
+    # =====================================================
 
     bot_client = TelegramClient(
         StringSession(),
@@ -1742,6 +2178,10 @@ async def main():
 
     try:
 
+        # =================================================
+        # CONNECT USER
+        # =================================================
+
         print(
             "\n🔐 Connecting "
             "Telegram user..."
@@ -1752,6 +2192,10 @@ async def main():
         print(
             "✅ Telegram user connected"
         )
+
+        # =================================================
+        # CONNECT BOT
+        # =================================================
 
         print(
             "\n🤖 Connecting "
@@ -1765,6 +2209,10 @@ async def main():
         print(
             "✅ Telegram bot connected"
         )
+
+        # =================================================
+        # CHECK SOURCES
+        # =================================================
 
         print(
             "\n🔎 Checking "
