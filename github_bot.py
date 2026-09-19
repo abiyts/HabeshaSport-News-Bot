@@ -60,7 +60,6 @@ SOURCE_ROUTES = {
     "@ETHIO_ARSENAL": "@arsenaletgunners",
     "@Manchester_Unitedfanns": "@manunitedethiopia",
     "@man_united_ethio_fan": "@manunitedethiopia",
-
 }
 
 
@@ -102,6 +101,7 @@ FACEBOOK_DESTINATIONS = {
         "page_id_env": "FB_ETHIO_SPORT_PAGE_ID",
         "token_env": "FB_ETHIO_SPORT_PAGE_TOKEN",
     },
+
     "@arsenaletgunners": {
         "name": "Arsenal",
         "page_id_env": "FB_ARSENAL_PAGE_ID",
@@ -111,83 +111,144 @@ FACEBOOK_DESTINATIONS = {
 
 
 def facebook_config(destination):
+
     config = FACEBOOK_DESTINATIONS.get(destination)
 
     if not config:
         return None
 
-    page_id = os.environ.get(config["page_id_env"], "").strip()
-    token = os.environ.get(config["token_env"], "").strip()
+    page_id = os.environ.get(
+        config["page_id_env"],
+        ""
+    ).strip()
+
+    token = os.environ.get(
+        config["token_env"],
+        ""
+    ).strip()
 
     if not page_id or not token:
+
         print(
             "ℹ Facebook is not configured for",
             destination,
             "- Telegram will continue normally."
         )
+
         return None
 
     return config, page_id, token
 
 
 def facebook_plain_text(post):
+
     if not post:
         return ""
 
-    text = re.sub(r"<[^>]+>", "", post)
+    text = re.sub(
+        r"<[^>]+>",
+        "",
+        post
+    )
+
     text = html.unescape(text)
+
     return text.strip()
 
 
-def facebook_request(endpoint, fields, files=None):
+def facebook_request(
+    endpoint,
+    fields,
+    files=None
+):
+
     boundary = "----HabeshaSportBoundary"
+
     body = bytearray()
 
     for key, value in fields.items():
-        body.extend(f"--{boundary}\r\n".encode())
+
         body.extend(
-            f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode()
+            f"--{boundary}\r\n".encode()
         )
-        body.extend(str(value).encode("utf-8"))
+
+        body.extend(
+            (
+                f'Content-Disposition: form-data; '
+                f'name="{key}"\r\n\r\n'
+            ).encode()
+        )
+
+        body.extend(
+            str(value).encode("utf-8")
+        )
+
         body.extend(b"\r\n")
 
     if files:
+
         for key, file_info in files.items():
+
             filename, content_type, data = file_info
-            body.extend(f"--{boundary}\r\n".encode())
+
+            body.extend(
+                f"--{boundary}\r\n".encode()
+            )
+
             body.extend(
                 (
                     f'Content-Disposition: form-data; '
-                    f'name="{key}"; filename="{filename}"\r\n'
+                    f'name="{key}"; '
+                    f'filename="{filename}"\r\n'
                 ).encode()
             )
-            body.extend(f"Content-Type: {content_type}\r\n\r\n".encode())
+
+            body.extend(
+                f"Content-Type: {content_type}\r\n\r\n".encode()
+            )
+
             body.extend(data)
+
             body.extend(b"\r\n")
 
-    body.extend(f"--{boundary}--\r\n".encode())
+    body.extend(
+        f"--{boundary}--\r\n".encode()
+    )
 
     request = urllib.request.Request(
         endpoint,
         data=bytes(body),
         method="POST",
         headers={
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "User-Agent": "Mozilla/5.0",
+            "Content-Type":
+                f"multipart/form-data; boundary={boundary}",
+            "User-Agent":
+                "Mozilla/5.0",
         },
     )
 
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read().decode("utf-8"))
+    with urllib.request.urlopen(
+        request,
+        timeout=60
+    ) as response:
+
+        return json.loads(
+            response.read().decode("utf-8")
+        )
 
 
-def facebook_post_text(destination, post):
+def facebook_post_text(
+    destination,
+    post
+):
+
     config = facebook_config(destination)
 
     if not config:
         return False
 
     page_config, page_id, token = config
+
     message = facebook_plain_text(post)
 
     if not message:
@@ -195,10 +256,12 @@ def facebook_post_text(destination, post):
 
     endpoint = (
         f"https://graph.facebook.com/"
-        f"{FACEBOOK_GRAPH_VERSION}/{page_id}/feed"
+        f"{FACEBOOK_GRAPH_VERSION}/"
+        f"{page_id}/feed"
     )
 
     try:
+
         result = facebook_request(
             endpoint,
             {
@@ -208,21 +271,37 @@ def facebook_post_text(destination, post):
         )
 
         if result.get("id"):
+
             print(
                 "✅ FACEBOOK TEXT POSTED TO",
                 page_config["name"]
             )
+
             return True
 
-        print("⚠ Facebook returned no post ID:", result)
+        print(
+            "⚠ Facebook returned no post ID:",
+            result
+        )
+
         return False
 
     except Exception as e:
-        print("⚠ FACEBOOK ERROR:", e)
+
+        print(
+            "⚠ FACEBOOK ERROR:",
+            e
+        )
+
         return False
 
 
-def facebook_post_media(destination, media_path, post):
+def facebook_post_media(
+    destination,
+    media_path,
+    post
+):
+
     config = facebook_config(destination)
 
     if not config:
@@ -231,30 +310,70 @@ def facebook_post_media(destination, media_path, post):
     page_config, page_id, token = config
 
     try:
-        with open(media_path, "rb") as f:
+
+        with open(
+            media_path,
+            "rb"
+        ) as f:
+
             data = f.read()
 
-        filename = os.path.basename(media_path)
+        filename = os.path.basename(
+            media_path
+        )
+
         lower_name = filename.lower()
 
-        if lower_name.endswith((".mp4", ".mov", ".m4v", ".webm")):
+        if lower_name.endswith(
+            (
+                ".mp4",
+                ".mov",
+                ".m4v",
+                ".webm"
+            )
+        ):
+
             endpoint = (
                 f"https://graph.facebook.com/"
-                f"{FACEBOOK_GRAPH_VERSION}/{page_id}/videos"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/videos"
             )
+
             content_type = "video/mp4"
+
             file_field = "source"
+
             text_field = "description"
-        elif lower_name.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+
+        elif lower_name.endswith(
+            (
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".gif",
+                ".webp"
+            )
+        ):
+
             endpoint = (
                 f"https://graph.facebook.com/"
-                f"{FACEBOOK_GRAPH_VERSION}/{page_id}/photos"
+                f"{FACEBOOK_GRAPH_VERSION}/"
+                f"{page_id}/photos"
             )
+
             content_type = "image/jpeg"
+
             file_field = "source"
+
             text_field = "caption"
+
         else:
-            print("ℹ Facebook media type not supported:", filename)
+
+            print(
+                "ℹ Facebook media type not supported:",
+                filename
+            )
+
             return False
 
         fields = {
@@ -272,21 +391,35 @@ def facebook_post_media(destination, media_path, post):
                     content_type,
                     data,
                 )
-            },
+            }
         )
 
-        if result.get("id") or result.get("post_id"):
+        if (
+            result.get("id")
+            or result.get("post_id")
+        ):
+
             print(
                 "✅ FACEBOOK MEDIA POSTED TO",
                 page_config["name"]
             )
+
             return True
 
-        print("⚠ Facebook media returned:", result)
+        print(
+            "⚠ Facebook media returned:",
+            result
+        )
+
         return False
 
     except Exception as e:
-        print("⚠ FACEBOOK MEDIA ERROR:", e)
+
+        print(
+            "⚠ FACEBOOK MEDIA ERROR:",
+            e
+        )
+
         return False
 
 
@@ -298,16 +431,34 @@ BUTTON_INTERVAL = 10
 
 PUSH_BUTTONS = [
     [
-        Button.url("Man City ሲቲ", "https://t.me/mancitynewset"),
-        Button.url("Liverpool ሊቨርፑል", "https://t.me/liverpoolethiop")
+        Button.url(
+            "Man City ሲቲ",
+            "https://t.me/mancitynewset"
+        ),
+        Button.url(
+            "Liverpool ሊቨርፑል",
+            "https://t.me/liverpoolethiop"
+        )
     ],
     [
-        Button.url("Arsenal አርሰናል", "https://t.me/arsenaletgunners"),
-        Button.url("Man United Ethiopia", "https://t.me/manunitedethiopia")
+        Button.url(
+            "Arsenal አርሰናል",
+            "https://t.me/arsenaletgunners"
+        ),
+        Button.url(
+            "Man United Ethiopia",
+            "https://t.me/manunitedethiopia"
+        )
     ],
     [
-        Button.url("Chelsea ቼልሲ", "https://t.me/chelseafcet"),
-        Button.url("Ethio Sport", "https://t.me/habeshasport")
+        Button.url(
+            "Chelsea ቼልሲ",
+            "https://t.me/chelseafcet"
+        ),
+        Button.url(
+            "Ethio Sport",
+            "https://t.me/habeshasport"
+        ),
     ],
 ]
 
@@ -320,24 +471,58 @@ STATE_FILE = "state.json"
 
 
 def load_state():
-    if not os.path.exists(STATE_FILE):
+
+    if not os.path.exists(
+        STATE_FILE
+    ):
+
         return {}
 
     try:
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
+
+        with open(
+            STATE_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
             return json.load(f)
+
     except Exception as e:
-        print("⚠ Could not read state.json:", e)
+
+        print(
+            "⚠ Could not read state.json:",
+            e
+        )
+
         return {}
 
 
 def save_state(state):
+
     try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump(state, f, indent=4, ensure_ascii=False)
+
+        with open(
+            STATE_FILE,
+            "w",
+            encoding="utf-8"
+        ) as f:
+
+            json.dump(
+                state,
+                f,
+                indent=4,
+                ensure_ascii=False
+            )
+
         print("💾 State saved")
+
     except Exception as e:
-        print("❌ Could not save state:", e)
+
+        print(
+            "❌ Could not save state:",
+            e
+        )
 
 
 # =========================================================
@@ -349,10 +534,29 @@ def remove_links(text):
     if not text:
         return ""
 
-    text = re.sub(r'https?://\S+', '', text)
-    text = re.sub(r'(https?://)?t\.me/\S+', '', text)
-    text = re.sub(r'(?<!\w)@[A-Za-z0-9_]{3,}', '', text)
-    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
+    text = re.sub(
+        r'https?://\S+',
+        '',
+        text
+    )
+
+    text = re.sub(
+        r'(https?://)?t\.me/\S+',
+        '',
+        text
+    )
+
+    text = re.sub(
+        r'(?<!\w)@[A-Za-z0-9_]{3,}',
+        '',
+        text
+    )
+
+    text = re.sub(
+        r'\n\s*\n\s*\n+',
+        '\n\n',
+        text
+    )
 
     return text.strip()
 
@@ -400,7 +604,9 @@ def translate_to_amharic(text):
 
         def replace_time(match):
 
-            hour = int(match.group(1))
+            hour = int(
+                match.group(1)
+            )
 
             minute = (
                 int(match.group(2))
@@ -409,31 +615,56 @@ def translate_to_amharic(text):
             )
 
             ampm = match.group(3)
+
             zone = match.group(4).upper()
 
             if ampm:
+
                 ampm = ampm.upper()
 
-                if ampm == "PM" and hour != 12:
+                if (
+                    ampm == "PM"
+                    and hour != 12
+                ):
+
                     hour += 12
 
-                elif ampm == "AM" and hour == 12:
+                elif (
+                    ampm == "AM"
+                    and hour == 12
+                ):
+
                     hour = 0
 
-            source_offset = timezone_offsets.get(zone, 0)
+            source_offset = (
+                timezone_offsets.get(
+                    zone,
+                    0
+                )
+            )
 
             ethiopia_offset = 3
 
             total_minutes = (
                 hour * 60
                 + minute
-                + (ethiopia_offset - source_offset) * 60
+                + (
+                    ethiopia_offset
+                    - source_offset
+                ) * 60
             )
 
-            total_minutes %= (24 * 60)
+            total_minutes %= (
+                24 * 60
+            )
 
-            eth_hour = total_minutes // 60
-            eth_minute = total_minutes % 60
+            eth_hour = (
+                total_minutes // 60
+            )
+
+            eth_minute = (
+                total_minutes % 60
+            )
 
             return (
                 f"{eth_hour:02d}:"
@@ -441,9 +672,14 @@ def translate_to_amharic(text):
                 f"Ethiopia time"
             )
 
-        return pattern.sub(replace_time, text)
+        return pattern.sub(
+            replace_time,
+            text
+        )
 
-    text = convert_times_to_ethiopia(text)
+    text = convert_times_to_ethiopia(
+        text
+    )
 
     # =====================================================
     # FOOTBALL WORDS / PHRASES TO KEEP IN ENGLISH
@@ -504,32 +740,52 @@ def translate_to_amharic(text):
     ]
 
     protected = {}
+
     counter = 0
 
-    keep_words = sorted(keep_words, key=len, reverse=True)
+    keep_words = sorted(
+        keep_words,
+        key=len,
+        reverse=True
+    )
 
     for word in keep_words:
 
-        pattern = re.compile(re.escape(word), re.IGNORECASE)
+        pattern = re.compile(
+            re.escape(word),
+            re.IGNORECASE
+        )
 
         def protect(match):
+
             nonlocal counter
 
             counter += 1
 
-            key = f"FOOTBALL_KEEP_{counter}_X"
+            key = (
+                f"FOOTBALL_KEEP_"
+                f"{counter}_X"
+            )
 
-            protected[key] = match.group(0)
+            protected[key] = (
+                match.group(0)
+            )
 
             return key
 
-        text = pattern.sub(protect, text)
+        text = pattern.sub(
+            protect,
+            text
+        )
 
     # =====================================================
     # SPLIT NEWS INTO SENTENCES
     # =====================================================
 
-    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    sentences = re.split(
+        r'(?<=[.!?])\s+',
+        text.strip()
+    )
 
     translated_sentences = []
 
@@ -543,31 +799,45 @@ def translate_to_amharic(text):
         chunks = []
 
         if len(sentence) <= 900:
+
             chunks = [sentence]
 
         else:
 
             words = sentence.split()
+
             current = ""
 
             for word in words:
 
-                if len(current) + len(word) + 1 > 850:
+                if (
+                    len(current)
+                    + len(word)
+                    + 1
+                    > 850
+                ):
 
                     if current:
-                        chunks.append(current.strip())
+                        chunks.append(
+                            current.strip()
+                        )
 
                     current = word
 
                 else:
 
                     if current:
-                        current += " " + word
+                        current += (
+                            " " + word
+                        )
+
                     else:
                         current = word
 
             if current:
-                chunks.append(current.strip())
+                chunks.append(
+                    current.strip()
+                )
 
         # =================================================
         # GOOGLE TRANSLATE
@@ -585,12 +855,17 @@ def translate_to_amharic(text):
                     "&tl=am"
                     "&dt=t"
                     "&q="
-                    + urllib.parse.quote(chunk)
+                    + urllib.parse.quote(
+                        chunk
+                    )
                 )
 
                 request = urllib.request.Request(
                     url,
-                    headers={"User-Agent": "Mozilla/5.0"}
+                    headers={
+                        "User-Agent":
+                            "Mozilla/5.0"
+                    }
                 )
 
                 with urllib.request.urlopen(
@@ -598,28 +873,50 @@ def translate_to_amharic(text):
                     timeout=20
                 ) as response:
 
-                    data = response.read().decode("utf-8")
+                    data = response.read().decode(
+                        "utf-8"
+                    )
 
-                result = json.loads(data)
+                result = json.loads(
+                    data
+                )
 
                 translated = ""
 
                 for part in result[0]:
 
                     if part[0]:
-                        translated += part[0]
+
+                        translated += (
+                            part[0]
+                        )
 
                 if translated:
-                    translated_sentences.append(translated.strip())
+
+                    translated_sentences.append(
+                        translated.strip()
+                    )
+
                 else:
-                    translated_sentences.append(chunk)
+
+                    translated_sentences.append(
+                        chunk
+                    )
 
             except Exception as e:
 
-                print("⚠ Translation error:", e)
-                translated_sentences.append(chunk)
+                print(
+                    "⚠ Translation error:",
+                    e
+                )
 
-    translated_text = " ".join(translated_sentences)
+                translated_sentences.append(
+                    chunk
+                )
+
+    translated_text = " ".join(
+        translated_sentences
+    )
 
     # =====================================================
     # RESTORE ENGLISH FOOTBALL TERMS
@@ -627,12 +924,18 @@ def translate_to_amharic(text):
 
     for key, original in protected.items():
 
-        translated_text = translated_text.replace(
-            key,
-            original
+        translated_text = (
+            translated_text.replace(
+                key,
+                original
+            )
         )
 
-    translated_text = re.sub(r'\s+', ' ', translated_text)
+    translated_text = re.sub(
+        r'\s+',
+        ' ',
+        translated_text
+    )
 
     return translated_text.strip()
 
@@ -643,13 +946,18 @@ def translate_to_amharic(text):
 
 def get_ethiopian_date_and_session():
 
-    utc_now = datetime.now(timezone.utc)
-
-    ethiopia_now = (
-        utc_now + timedelta(hours=3)
+    utc_now = datetime.now(
+        timezone.utc
     )
 
-    now = ethiopia_now.replace(tzinfo=None)
+    ethiopia_now = (
+        utc_now
+        + timedelta(hours=3)
+    )
+
+    now = ethiopia_now.replace(
+        tzinfo=None
+    )
 
     year = now.year
 
@@ -669,7 +977,9 @@ def get_ethiopian_date_and_session():
 
         eth_year = year - 9
 
-        previous_gregorian_year = year - 1
+        previous_gregorian_year = (
+            year - 1
+        )
 
         previous_new_year_day = (
             12
@@ -687,10 +997,17 @@ def get_ethiopian_date_and_session():
 
         eth_year = year - 8
 
-    days = (now - new_year).days
+    days = (
+        now - new_year
+    ).days
 
-    eth_month = (days // 30) + 1
-    eth_day = (days % 30) + 1
+    eth_month = (
+        days // 30
+    ) + 1
+
+    eth_day = (
+        days % 30
+    ) + 1
 
     months = {
         1: "መስከረም",
@@ -713,25 +1030,41 @@ def get_ethiopian_date_and_session():
     # =====================================================
 
     if 6 <= now.hour < 12:
-        session = "ጠዋት | Morning"
+
+        session = (
+            "ጠዋት | Morning"
+        )
 
     elif 12 <= now.hour < 14:
-        session = "እኩለ ቀን | Midday"
+
+        session = (
+            "እኩለ ቀን | Midday"
+        )
 
     elif 14 <= now.hour < 18:
-        session = "ከሰዓት | Afternoon"
+
+        session = (
+            "ከሰዓት | Afternoon"
+        )
 
     elif 18 <= now.hour < 21:
-        session = "ማታ | Evening"
+
+        session = (
+            "ማታ | Evening"
+        )
 
     else:
-        session = "ሌሊት | Night"
+
+        session = (
+            "ሌሊት | Night"
+        )
 
     ethiopian_hour = (
         (now.hour - 6) % 12
     )
 
     if ethiopian_hour == 0:
+
         ethiopian_hour = 12
 
     time_text = (
@@ -759,12 +1092,17 @@ def create_post(text):
     if not text:
         return ""
 
-    translated = translate_to_amharic(text)
+    translated = translate_to_amharic(
+        text
+    )
 
     if not translated:
+
         translated = text
 
-    translated = html.escape(translated)
+    translated = html.escape(
+        translated
+    )
 
     (
         eth_date,
@@ -773,7 +1111,8 @@ def create_post(text):
     ) = get_ethiopian_date_and_session()
 
     return (
-        f"📅 <b>{eth_date} | {session}</b>\n"
+        f"📅 <b>{eth_date} | "
+        f"{session}</b>\n"
         f"🕒 <b>{ethiopian_time}</b>\n"
         "⚽ <b>አጭር የስፖርት ዜና "
         "ለቤተሰቦቻችን</b>\n\n"
@@ -793,7 +1132,9 @@ def create_post(text):
 
 def is_advertisement(message):
 
-    text = (message.message or "").lower()
+    text = (
+        message.message or ""
+    ).lower()
 
     ad_words = [
         ".apk",
@@ -814,6 +1155,7 @@ def is_advertisement(message):
     for word in ad_words:
 
         if word in text:
+
             return True
 
     if message.file:
@@ -837,6 +1179,7 @@ def is_advertisement(message):
                     ".scr"
                 )
             ):
+
                 return True
 
             for word in [
@@ -847,6 +1190,7 @@ def is_advertisement(message):
             ]:
 
                 if word in filename:
+
                     return True
 
     return False
@@ -866,29 +1210,75 @@ async def process_message(
 ):
 
     try:
-        original_text = message.message or ""
 
-        if is_advertisement(message):
-            print("🚫 ADVERTISEMENT BLOCKED")
-            print("SOURCE:", source_username)
-            print("TEXT:", original_text[:300])
-            return True, False
-
-        print("\n" + "=" * 60)
-        print("📰 NEW NEWS")
-        print("SOURCE:", source_username)
-        print("DESTINATION:", destination)
-        print("MESSAGE ID:", message.id)
-        print("TEXT:")
-        print(original_text[:500])
-
-        post = create_post(original_text)
-
-        show_buttons = (
-            (post_count + 1) % BUTTON_INTERVAL == 0
+        original_text = (
+            message.message or ""
         )
 
-        buttons = PUSH_BUTTONS if show_buttons else None
+        if is_advertisement(message):
+
+            print(
+                "🚫 ADVERTISEMENT BLOCKED"
+            )
+
+            print(
+                "SOURCE:",
+                source_username
+            )
+
+            print(
+                "TEXT:",
+                original_text[:300]
+            )
+
+            return True, False
+
+        print(
+            "\n" + "=" * 60
+        )
+
+        print(
+            "📰 NEW NEWS"
+        )
+
+        print(
+            "SOURCE:",
+            source_username
+        )
+
+        print(
+            "DESTINATION:",
+            destination
+        )
+
+        print(
+            "MESSAGE ID:",
+            message.id
+        )
+
+        print(
+            "TEXT:"
+        )
+
+        print(
+            original_text[:500]
+        )
+
+        post = create_post(
+            original_text
+        )
+
+        show_buttons = (
+            (post_count + 1)
+            % BUTTON_INTERVAL
+            == 0
+        )
+
+        buttons = (
+            PUSH_BUTTONS
+            if show_buttons
+            else None
+        )
 
         media = None
 
@@ -897,41 +1287,151 @@ async def process_message(
         # -------------------------------------------------
 
         if message.media:
-            print("📷 Media detected")
-            print("⬇ Downloading media...")
 
-            media = await user_client.download_media(message)
+            print(
+                "📷 Media detected"
+            )
+
+            print(
+                "⬇ Downloading media..."
+            )
+
+            media = await user_client.download_media(
+                message
+            )
 
             if media:
-                await bot_client.send_file(
-                    destination,
-                    media,
-                    caption=post,
-                    parse_mode="html",
-                    buttons=buttons,
-                    force_document=False
-                )
 
-                print("✅ MEDIA POSTED TO", destination)
+                telegram_posted = False
 
-                # Facebook is attempted only after Telegram succeeds.
-                # Facebook failure does NOT fail the Telegram message.
-                facebook_post_media(
-                    destination,
-                    media,
-                    post
-                )
+                # =================================================
+                # FIRST TRY: TELEGRAM BOT
+                # =================================================
 
                 try:
-                    os.remove(media)
+
+                    print(
+                        "🤖 Trying bot account "
+                        "to post media..."
+                    )
+
+                    await bot_client.send_file(
+                        destination,
+                        media,
+                        caption=post,
+                        parse_mode="html",
+                        buttons=buttons,
+                        force_document=False
+                    )
+
+                    print(
+                        "✅ MEDIA POSTED TO",
+                        destination
+                    )
+
+                    telegram_posted = True
+
+                except Exception as bot_media_error:
+
+                    print(
+                        "⚠ BOT MEDIA POST FAILED:"
+                    )
+
+                    print(
+                        bot_media_error
+                    )
+
+                    print(
+                        "🔄 Trying Telegram "
+                        "user account..."
+                    )
+
+                    # =================================================
+                    # FALLBACK: TELEGRAM USER ACCOUNT
+                    # =================================================
+
+                    try:
+
+                        await user_client.send_file(
+                            destination,
+                            media,
+                            caption=post,
+                            parse_mode="html",
+                            buttons=buttons,
+                            force_document=False
+                        )
+
+                        print(
+                            "✅ MEDIA POSTED TO",
+                            destination,
+                            "USING USER ACCOUNT"
+                        )
+
+                        telegram_posted = True
+
+                    except Exception as user_media_error:
+
+                        print(
+                            "❌ USER MEDIA POST FAILED:"
+                        )
+
+                        print(
+                            user_media_error
+                        )
+
+                # =================================================
+                # FACEBOOK ONLY AFTER TELEGRAM SUCCESS
+                # =================================================
+
+                if telegram_posted:
+
+                    facebook_post_media(
+                        destination,
+                        media,
+                        post
+                    )
+
+                    try:
+
+                        os.remove(
+                            media
+                        )
+
+                    except Exception:
+                        pass
+
+                    return True, True
+
+                # =================================================
+                # BOTH TELEGRAM METHODS FAILED
+                # =================================================
+
+                try:
+
+                    os.remove(
+                        media
+                    )
+
                 except Exception:
                     pass
 
-                return True, True
+                print(
+                    "❌ Telegram media "
+                    "could not be posted."
+                )
 
-            print("⚠ Media download failed")
+                return False, False
+
+            print(
+                "⚠ Media download failed"
+            )
+
+        # -------------------------------------------------
+        # TEXT ONLY POST
+        # -------------------------------------------------
 
         if post:
+
             await bot_client.send_message(
                 destination,
                 post,
@@ -939,9 +1439,14 @@ async def process_message(
                 buttons=buttons
             )
 
-            print("✅ TEXT POSTED TO", destination)
+            print(
+                "✅ TEXT POSTED TO",
+                destination
+            )
 
-            # Facebook is attempted only after Telegram succeeds.
+            # Facebook is attempted only
+            # after Telegram succeeds.
+
             facebook_post_text(
                 destination,
                 post
@@ -949,11 +1454,20 @@ async def process_message(
 
             return True, True
 
-        print("⚠ Message contained no usable text")
+        print(
+            "⚠ Message contained "
+            "no usable text"
+        )
+
         return True, False
 
     except Exception as e:
-        print("❌ ERROR PROCESSING MESSAGE:", e)
+
+        print(
+            "❌ ERROR PROCESSING MESSAGE:",
+            e
+        )
+
         return False, False
 
 
@@ -971,7 +1485,9 @@ async def check_channel(
 
     try:
 
-        entity = await user_client.get_entity(channel)
+        entity = await user_client.get_entity(
+            channel
+        )
 
         username = getattr(
             entity,
@@ -979,41 +1495,73 @@ async def check_channel(
             channel
         )
 
-        print("\n" + "-" * 60)
-        print("🔎 Checking:", username)
-        print("📢 Destination:", destination)
+        print(
+            "\n" + "-" * 60
+        )
+
+        print(
+            "🔎 Checking:",
+            username
+        )
+
+        print(
+            "📢 Destination:",
+            destination
+        )
 
         if channel not in state:
 
-            print("🆕 NEW SOURCE DETECTED")
-            print("🛡 Initializing safely...")
+            print(
+                "🆕 NEW SOURCE DETECTED"
+            )
 
-            latest_messages = await user_client.get_messages(
-                entity,
-                limit=1
+            print(
+                "🛡 Initializing safely..."
+            )
+
+            latest_messages = (
+                await user_client.get_messages(
+                    entity,
+                    limit=1
+                )
             )
 
             if latest_messages:
 
-                latest_id = latest_messages[0].id
+                latest_id = (
+                    latest_messages[0].id
+                )
 
-                state[channel] = latest_id
+                state[channel] = (
+                    latest_id
+                )
 
-                save_state(state)
+                save_state(
+                    state
+                )
 
                 print(
-                    "✅ Starting from latest message ID:",
+                    "✅ Starting from "
+                    "latest message ID:",
                     latest_id
                 )
 
             else:
 
                 state[channel] = 0
-                save_state(state)
 
-                print("ℹ Channel has no messages")
+                save_state(
+                    state
+                )
 
-            print("⏳ Waiting for NEW messages only.")
+                print(
+                    "ℹ Channel has no messages"
+                )
+
+            print(
+                "⏳ Waiting for NEW "
+                "messages only."
+            )
 
             return
 
@@ -1024,7 +1572,10 @@ async def check_channel(
             )
         )
 
-        print("Last processed ID:", last_id)
+        print(
+            "Last processed ID:",
+            last_id
+        )
 
         messages = []
 
@@ -1034,19 +1585,27 @@ async def check_channel(
             reverse=True
         ):
 
-            messages.append(message)
+            messages.append(
+                message
+            )
 
         if not messages:
 
-            print("ℹ No new messages")
+            print(
+                "ℹ No new messages"
+            )
 
             return
 
         print(
-            f"📥 Found {len(messages)} new message(s)"
+            f"📥 Found "
+            f"{len(messages)} "
+            f"new message(s)"
         )
 
-        highest_successful_id = last_id
+        highest_successful_id = (
+            last_id
+        )
 
         post_count = int(
             state.get(
@@ -1057,13 +1616,15 @@ async def check_channel(
 
         for message in messages:
 
-            success, posted = await process_message(
-                user_client,
-                bot_client,
-                message,
-                username,
-                destination,
-                post_count
+            success, posted = (
+                await process_message(
+                    user_client,
+                    bot_client,
+                    message,
+                    username,
+                    destination,
+                    post_count
+                )
             )
 
             if success:
@@ -1077,7 +1638,9 @@ async def check_channel(
 
                     post_count += 1
 
-                    state["_successful_posts"] = post_count
+                    state[
+                        "_successful_posts"
+                    ] = post_count
 
                     if (
                         post_count
@@ -1086,26 +1649,40 @@ async def check_channel(
                     ):
 
                         print(
-                            f"🔘 Push buttons added "
-                            f"to post #{post_count}"
+                            f"🔘 Push buttons "
+                            f"added to post "
+                            f"#{post_count}"
                         )
 
-                await asyncio.sleep(2)
+                await asyncio.sleep(
+                    2
+                )
 
             else:
 
-                print("⚠ Message failed.")
                 print(
-                    "⚠ State will NOT move past this message."
+                    "⚠ Message failed."
+                )
+
+                print(
+                    "⚠ State will NOT "
+                    "move past this message."
                 )
 
                 break
 
-        if highest_successful_id > last_id:
+        if (
+            highest_successful_id
+            > last_id
+        ):
 
-            state[channel] = highest_successful_id
+            state[channel] = (
+                highest_successful_id
+            )
 
-            save_state(state)
+            save_state(
+                state
+            )
 
             print(
                 "✅ Updated last ID:",
@@ -1114,7 +1691,11 @@ async def check_channel(
 
     except Exception as e:
 
-        print("❌ CHANNEL ERROR:", channel)
+        print(
+            "❌ CHANNEL ERROR:",
+            channel
+        )
+
         print(e)
 
 
@@ -1124,9 +1705,18 @@ async def check_channel(
 
 async def main():
 
-    print("\n" + "=" * 60)
-    print("🚀 HABESHA SPORT GITHUB BOT")
-    print("=" * 60)
+    print(
+        "\n" + "=" * 60
+    )
+
+    print(
+        "🚀 HABESHA SPORT "
+        "GITHUB BOT"
+    )
+
+    print(
+        "=" * 60
+    )
 
     state = load_state()
 
@@ -1152,21 +1742,34 @@ async def main():
 
     try:
 
-        print("\n🔐 Connecting Telegram user...")
+        print(
+            "\n🔐 Connecting "
+            "Telegram user..."
+        )
 
         await user_client.start()
 
-        print("✅ Telegram user connected")
+        print(
+            "✅ Telegram user connected"
+        )
 
-        print("\n🤖 Connecting Telegram bot...")
+        print(
+            "\n🤖 Connecting "
+            "Telegram bot..."
+        )
 
         await bot_client.start(
             bot_token=BOT_TOKEN
         )
 
-        print("✅ Telegram bot connected")
+        print(
+            "✅ Telegram bot connected"
+        )
 
-        print("\n🔎 Checking source channels...")
+        print(
+            "\n🔎 Checking "
+            "source channels..."
+        )
 
         print(
             f"📊 Total sources: "
@@ -1175,9 +1778,11 @@ async def main():
 
         for channel in SOURCE_CHANNELS:
 
-            destination = SOURCE_ROUTES.get(
-                channel,
-                DEFAULT_DESTINATION
+            destination = (
+                SOURCE_ROUTES.get(
+                    channel,
+                    DEFAULT_DESTINATION
+                )
             )
 
             await check_channel(
@@ -1188,17 +1793,27 @@ async def main():
                 state
             )
 
-        print("\n" + "=" * 60)
-        print("✅ CHECK COMPLETE")
-        print("=" * 60)
+        print(
+            "\n" + "=" * 60
+        )
+
+        print(
+            "✅ CHECK COMPLETE"
+        )
+
+        print(
+            "=" * 60
+        )
 
     finally:
 
         await bot_client.disconnect()
+
         await user_client.disconnect()
 
         print(
-            "\n🔌 Telegram connections closed"
+            "\n🔌 Telegram "
+            "connections closed"
         )
 
 
@@ -1207,4 +1822,7 @@ async def main():
 # =========================================================
 
 if __name__ == "__main__":
-    asyncio.run(main())
+
+    asyncio.run(
+        main()
+    )
