@@ -56,6 +56,11 @@ SOURCE_ROUTES = {
     "@Empire_MU": "@manunitedethiopia",
     "@manchester_united_uk": "@manunitedethiopia",
     "@manchesterunitedsunsport": "@manunitedethiopia",
+    "@ZENA_ARSENAL": "@arsenaletgunners",
+    "@ETHIO_ARSENAL": "@arsenaletgunners",
+    "@Manchester_Unitedfanns": "@manunitedethiopia",
+    "@man_united_ethio_fan": "@manunitedethiopia",
+
 }
 
 
@@ -73,6 +78,8 @@ GENERAL_SOURCES = [
     "@mainfootball",
     "@transfermarkt_off",
     "@mtransfers",
+    "@sport_hub_football",
+    "@transfer_news_football",
 ]
 
 
@@ -503,15 +510,6 @@ def get_ethiopian_date_and_session():
 
     # =====================================================
     # ETHIOPIAN CLOCK
-    # =====================================================
-    #
-    # 06:00 AM international → 12:00 Ethiopian
-    # 07:00 AM international → 01:00 Ethiopian
-    # 12:00 PM international → 06:00 Ethiopian
-    # 06:00 PM international → 12:00 Ethiopian
-    # 08:00 PM international → 02:00 Ethiopian
-    # 12:00 AM international → 06:00 Ethiopian
-    #
     # =====================================================
 
     if 6 <= now.hour < 12:
