@@ -224,8 +224,7 @@ def remove_links(text):
 
 
 # =========================================================
-# FOOTBALL TRANSLATION
-# ENGLISH → AMHARIC
+# TRANSLATE FOOTBALL NEWS + CONVERT TIME TO ETHIOPIA TIME
 # =========================================================
 
 def translate_to_amharic(text):
@@ -233,22 +232,121 @@ def translate_to_amharic(text):
     if not text:
         return ""
 
-    # -----------------------------------------------------
-    # FOOTBALL WORDS / PHRASES TO KEEP IN ENGLISH
-    # -----------------------------------------------------
+    # =====================================================
+    # TIME ZONE CONVERSION
+    # =====================================================
+
+    def convert_times_to_ethiopia(text):
+
+        from datetime import datetime, timedelta, timezone
+        import re
+
+        # Time zones with fixed UTC offsets
+        timezone_offsets = {
+            "UTC": 0,
+            "GMT": 0,
+            "EAT": 3,
+            "WAT": 1,
+            "CAT": 2,
+            "CET": 1,
+            "CEST": 2,
+            "BST": 1,
+            "IST": 5.5,
+        }
+
+        # Example:
+        # 14:00 GMT
+        # 2:00 PM UTC
+        # 18:30 CET
+        pattern = re.compile(
+            r'\b(\d{1,2})(?::(\d{2}))?\s*'
+            r'(AM|PM|am|pm)?\s*'
+            r'(UTC|GMT|EAT|WAT|CAT|CET|CEST|BST|IST)\b',
+            re.IGNORECASE
+        )
+
+        def replace_time(match):
+
+            hour = int(match.group(1))
+
+            minute = (
+                int(match.group(2))
+                if match.group(2)
+                else 0
+            )
+
+            ampm = match.group(3)
+
+            zone = match.group(4).upper()
+
+            # Convert 12-hour time to 24-hour time
+            if ampm:
+
+                ampm_upper = ampm.upper()
+
+                if ampm_upper == "PM" and hour != 12:
+                    hour += 12
+
+                elif ampm_upper == "AM" and hour == 12:
+                    hour = 0
+
+            # Get source timezone offset
+            source_offset = timezone_offsets.get(
+                zone,
+                0
+            )
+
+            # Ethiopia is UTC+3
+            ethiopia_offset = 3
+
+            # Convert source time to Ethiopia time
+            total_minutes = (
+                hour * 60
+                + minute
+                + (ethiopia_offset - source_offset) * 60
+            )
+
+            # Handle crossing midnight
+            total_minutes %= (24 * 60)
+
+            eth_hour = total_minutes // 60
+            eth_minute = total_minutes % 60
+
+            # Use 24-hour international format
+            return (
+                f"{eth_hour:02d}:"
+                f"{eth_minute:02d} "
+                f"Ethiopia time"
+            )
+
+        return pattern.sub(
+            replace_time,
+            text
+        )
+
+    # Convert times BEFORE translation
+    text = convert_times_to_ethiopia(text)
+
+    # =====================================================
+    # WORDS THAT MUST STAY IN ENGLISH
+    # =====================================================
 
     keep_words = [
+
+        # Match / result terms
         "Here we go",
         "Fulltime",
         "Full-time",
         "Match Week",
         "Assist",
 
+        # Competitions
         "Premier League",
         "Champions League",
         "Europa League",
         "Conference League",
 
+        # Transfer terms
         "Transfer",
         "Transfers",
         "Medical",
@@ -259,6 +357,7 @@ def translate_to_amharic(text):
         "Contract",
         "Loan",
 
+        # Clubs
         "Manchester City",
         "Manchester United",
         "Liverpool",
@@ -291,15 +390,13 @@ def translate_to_amharic(text):
         "Borussia Dortmund",
     ]
 
-    # -----------------------------------------------------
-    # PROTECT IMPORTANT ENGLISH WORDS
-    # -----------------------------------------------------
+    # =====================================================
+    # PROTECT IMPORTANT FOOTBALL WORDS
+    # =====================================================
 
     protected = {}
-
     counter = 0
 
-    # Longest phrases first
     keep_words = sorted(
         keep_words,
         key=len,
@@ -320,7 +417,7 @@ def translate_to_amharic(text):
             counter += 1
 
             key = (
-                f"FOOTBALLKEEP{counter}X"
+                f"FOOTBALL_KEEP_{counter}_X"
             )
 
             protected[key] = match.group(0)
@@ -332,9 +429,9 @@ def translate_to_amharic(text):
             text
         )
 
-    # -----------------------------------------------------
-    # SPLIT LONG NEWS INTO SENTENCES
-    # -----------------------------------------------------
+    # =====================================================
+    # SPLIT INTO SENTENCES
+    # =====================================================
 
     sentences = re.split(
         r'(?<=[.!?])\s+',
@@ -350,10 +447,9 @@ def translate_to_amharic(text):
         if not sentence:
             continue
 
-        # Keep translation requests reasonably short
         chunks = []
 
-        if len(sentence) <= 1000:
+        if len(sentence) <= 900:
 
             chunks = [sentence]
 
@@ -365,7 +461,12 @@ def translate_to_amharic(text):
 
             for word in words:
 
-                if len(current) + len(word) + 1 > 900:
+                if (
+                    len(current)
+                    + len(word)
+                    + 1
+                    > 850
+                ):
 
                     if current:
                         chunks.append(
@@ -378,6 +479,7 @@ def translate_to_amharic(text):
 
                     if current:
                         current += " " + word
+
                     else:
                         current = word
 
@@ -386,9 +488,9 @@ def translate_to_amharic(text):
                     current.strip()
                 )
 
-        # -------------------------------------------------
-        # TRANSLATE EACH SMALL SECTION
-        # -------------------------------------------------
+        # =================================================
+        # GOOGLE TRANSLATE
+        # =================================================
 
         for chunk in chunks:
 
@@ -433,6 +535,7 @@ def translate_to_amharic(text):
                 for part in result[0]:
 
                     if part[0]:
+
                         translated += part[0]
 
                 if translated:
@@ -454,16 +557,39 @@ def translate_to_amharic(text):
                     e
                 )
 
-                # Keep original sentence if
-                # translation fails.
                 translated_sentences.append(
                     chunk
                 )
+
+    # =====================================================
+    # JOIN TRANSLATED SENTENCES
+    # =====================================================
 
     translated_text = " ".join(
         translated_sentences
     )
 
+    # =====================================================
+    # RESTORE PROTECTED FOOTBALL TERMS
+    # =====================================================
+
+    for key, original in protected.items():
+
+        translated_text = (
+            translated_text.replace(
+                key,
+                original
+            )
+        )
+
+    # Clean extra spaces
+    translated_text = re.sub(
+        r'\s+',
+        ' ',
+        translated_text
+    )
+
+    return translated_text.strip()
     # -----------------------------------------------------
     # RESTORE ENGLISH FOOTBALL TERMS
     # -----------------------------------------------------
