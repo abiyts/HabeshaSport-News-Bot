@@ -22,10 +22,72 @@ USER_SESSION = os.environ["USER_SESSION"]
 
 
 # =========================================================
-# CHANNEL SETTINGS
+# CHANNEL ROUTING
 # =========================================================
 
-DESTINATION_CHANNEL = "@habeshasport"
+DEFAULT_DESTINATION = "@habeshasport"
+
+SOURCE_ROUTES = {
+
+    # =====================================================
+    # ARSENAL
+    # =====================================================
+    "@arsenal_gunners_london": "@arsenaletgunners",
+    "@Arsenalc": "@arsenaletgunners",
+    "@gunnersfooty": "@arsenaletgunners",
+    "@GUNNERS": "@arsenaletgunners",
+
+    # =====================================================
+    # LIVERPOOL
+    # =====================================================
+    "@LiverpoolFCNews": "@liverpoolethiop",
+    "@liverpool": "@liverpoolethiop",
+    "@lfconline": "@liverpoolethiop",
+
+    # =====================================================
+    # MANCHESTER CITY
+    # =====================================================
+    "@Manchester_City": "@mancitynewset",
+    "@manchester_city_cf": "@mancitynewset",
+    "@mancity247": "@mancitynewset",
+
+    # =====================================================
+    # CHELSEA
+    # =====================================================
+    "@Chelsea_fc_worldwide": "@chelseafcet",
+    "@chelseafcnews01": "@chelseafcet",
+    "@chelseaanalysis": "@chelseafcet",
+    "@chelseasunsport": "@chelseafcet",
+
+    # =====================================================
+    # MANCHESTER UNITED
+    # =====================================================
+    "@ManchesterUnited": "@manunitedethiopia",
+    "@Empire_MU": "@manunitedethiopia",
+    "@manchester_united_uk": "@manunitedethiopia",
+    "@manchesterunitedsunsport": "@manunitedethiopia",
+}
+
+
+# =========================================================
+# GENERAL FOOTBALL SOURCES → HABESHA SPORT
+# =========================================================
+
+GENERAL_SOURCES = [
+    "@futbol_fudbol_sport_tv_gollar",
+    "@sky_sports_world",
+    "@FabrizioRomanoTG",
+    "@Sky_sports_football_updates",
+    "@Premier_League_News_TG",
+    "@goal_sport_football",
+]
+
+
+# =========================================================
+# ALL SOURCE CHANNELS
+# =========================================================
+
+SOURCE_CHANNELS = GENERAL_SOURCES + list(SOURCE_ROUTES.keys())
 
 # =========================================================
 # PUSH BUTTONS
@@ -45,7 +107,6 @@ PUSH_BUTTONS = [
 SOURCE_CHANNELS = [
     "@futbol_fudbol_sport_tv_gollar",
     "@sky_sports_world",
-    "@FabrizioRomanoTG",
     "@Sky_sports_football_updates",
     "@Premier_League_News_TG",
     "@goal_sport_football",
