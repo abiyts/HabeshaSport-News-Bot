@@ -64,12 +64,15 @@ SOURCE_ROUTES = {
 # =========================================================
 
 GENERAL_SOURCES = [
-    "@futbol_fudbol_sport_tv_gollar",
-    "@sky_sports_world",
-    "@FabrizioRomanoTG",
-    "@Sky_sports_football_updates",
-    "@Premier_League_News_TG",
-    "@goal_sport_football",
+    "@br_football_news",
+    "@Football433_uk",
+    "@Espnfc_news",
+    "@Premier_League_Update",
+    "@Espn_Football_News_UK",
+    "@squawka_football_news",
+    "@mainfootball",
+    "@transfermarkt_off",
+    "@mtransfers",
 ]
 
 
