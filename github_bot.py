@@ -365,6 +365,7 @@ async def process_message(
     bot_client,
     message,
     source_username,
+    destination,
     post_count
 ):
     try:
