@@ -490,20 +490,29 @@ def translate_to_amharic(text):
     return translated_text.strip()
 
 # =========================================================
-# ETHIOPIAN CALENDAR DATE
+# ETHIOPIAN CALENDAR DATE + ETHIOPIA LOCAL TIME
 # =========================================================
 
 def get_ethiopian_date_and_session():
 
-    now = (
-        datetime.now(timezone.utc)
-        + timedelta(hours=3)
+    # Ethiopia is UTC+3.
+    # GitHub Actions normally runs in UTC, so we explicitly
+    # convert UTC to Ethiopia time here.
+
+    utc_now = datetime.now(timezone.utc)
+
+    ethiopia_now = (
+        utc_now + timedelta(hours=3)
     )
+
+    # Remove timezone information for calendar calculations
+    now = ethiopia_now.replace(tzinfo=None)
 
     year = now.year
 
-    # Ethiopian New Year is September 11,
-    # or September 12 before a Gregorian leap year.
+    # Ethiopian New Year:
+    # September 11 normally
+    # September 12 when the following Gregorian year is leap
 
     new_year_day = (
         12
@@ -517,7 +526,7 @@ def get_ethiopian_date_and_session():
         new_year_day
     )
 
-    if now.replace(tzinfo=None) < new_year:
+    if now < new_year:
 
         eth_year = year - 9
 
@@ -540,8 +549,7 @@ def get_ethiopian_date_and_session():
         eth_year = year - 8
 
     days = (
-        now.replace(tzinfo=None)
-        - new_year
+        now - new_year
     ).days
 
     eth_month = (
@@ -553,7 +561,6 @@ def get_ethiopian_date_and_session():
     ) + 1
 
     months = {
-
         1: "መስከረም",
         2: "ጥቅምት",
         3: "ኅዳር",
@@ -569,7 +576,9 @@ def get_ethiopian_date_and_session():
         13: "ጳጉሜን"
     }
 
-    # Ethiopia-time posting session
+    # =====================================================
+    # ETHIOPIA LOCAL TIME
+    # =====================================================
 
     hour = now.hour
 
@@ -593,6 +602,9 @@ def get_ethiopian_date_and_session():
 
         session = "ሌሊት | Night"
 
+    # Ethiopia local clock
+    # Example: 02:30 PM
+
     time_text = now.strftime(
         "%I:%M %p"
     )
@@ -604,8 +616,7 @@ def get_ethiopian_date_and_session():
         session,
         time_text
     )
-
-
+    
 # =========================================================
 # CREATE FINAL POST
 # =========================================================
