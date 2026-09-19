@@ -34,40 +34,24 @@ DEFAULT_DESTINATION = "@habeshasport"
 # =========================================================
 
 SOURCE_ROUTES = {
-
-    # =====================================================
-    # ARSENAL
-    # =====================================================
     "@arsenal_gunners_london": "@arsenaletgunners",
     "@Arsenalc": "@arsenaletgunners",
     "@gunnersfooty": "@arsenaletgunners",
     "@GUNNERS": "@arsenaletgunners",
 
-    # =====================================================
-    # LIVERPOOL
-    # =====================================================
     "@LiverpoolFCNews": "@liverpoolethiop",
     "@liverpool": "@liverpoolethiop",
     "@lfconline": "@liverpoolethiop",
 
-    # =====================================================
-    # MANCHESTER CITY
-    # =====================================================
     "@Manchester_City": "@mancitynewset",
     "@manchester_city_cf": "@mancitynewset",
     "@mancity247": "@mancitynewset",
 
-    # =====================================================
-    # CHELSEA
-    # =====================================================
     "@Chelsea_fc_worldwide": "@chelseafcet",
     "@chelseafcnews01": "@chelseafcet",
     "@chelseaanalysis": "@chelseafcet",
     "@chelseasunsport": "@chelseafcet",
 
-    # =====================================================
-    # MANCHESTER UNITED
-    # =====================================================
     "@ManchesterUnited": "@manunitedethiopia",
     "@Empire_MU": "@manunitedethiopia",
     "@manchester_united_uk": "@manunitedethiopia",
@@ -104,36 +88,16 @@ BUTTON_INTERVAL = 10
 
 PUSH_BUTTONS = [
     [
-        Button.url(
-            "Man City ሲቲ",
-            "https://t.me/mancitynewset"
-        ),
-        Button.url(
-            "Liverpool ሊቨርፑል",
-            "https://t.me/liverpoolethiop"
-        )
+        Button.url("Man City ሲቲ", "https://t.me/mancitynewset"),
+        Button.url("Liverpool ሊቨርፑል", "https://t.me/liverpoolethiop")
     ],
-
     [
-        Button.url(
-            "Arsenal አርሰናል",
-            "https://t.me/arsenaletgunners"
-        ),
-        Button.url(
-            "Man United Ethiopia",
-            "https://t.me/manunitedethiopia"
-        )
+        Button.url("Arsenal አርሰናል", "https://t.me/arsenaletgunners"),
+        Button.url("Man United Ethiopia", "https://t.me/manunitedethiopia")
     ],
-
     [
-        Button.url(
-            "Chelsea ቼልሲ",
-            "https://t.me/chelseafcet"
-        ),
-        Button.url(
-            "Ethio Sport",
-            "https://t.me/habeshasport"
-        )
+        Button.url("Chelsea ቼልሲ", "https://t.me/chelseafcet"),
+        Button.url("Ethio Sport", "https://t.me/habeshasport")
     ],
 ]
 
@@ -150,13 +114,8 @@ def load_state():
         return {}
 
     try:
-        with open(
-            STATE_FILE,
-            "r",
-            encoding="utf-8"
-        ) as f:
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-
     except Exception as e:
         print("⚠ Could not read state.json:", e)
         return {}
@@ -164,20 +123,9 @@ def load_state():
 
 def save_state(state):
     try:
-        with open(
-            STATE_FILE,
-            "w",
-            encoding="utf-8"
-        ) as f:
-            json.dump(
-                state,
-                f,
-                indent=4,
-                ensure_ascii=False
-            )
-
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=4, ensure_ascii=False)
         print("💾 State saved")
-
     except Exception as e:
         print("❌ Could not save state:", e)
 
@@ -191,429 +139,13 @@ def remove_links(text):
     if not text:
         return ""
 
-    # Remove normal web links
-    text = re.sub(
-        r'https?://\S+',
-        '',
-        text
-    )
-
-    # Remove Telegram links
-    text = re.sub(
-        r'(https?://)?t\.me/\S+',
-        '',
-        text
-    )
-
-    # Remove Telegram/channel usernames
-    # Example: @FabrizioRomano
-    text = re.sub(
-        r'(?<!\w)@[A-Za-z0-9_]{3,}',
-        '',
-        text
-    )
-
-    # Remove excessive blank lines
-    text = re.sub(
-        r'\n\s*\n\s*\n+',
-        '\n\n',
-        text
-    )
+    text = re.sub(r'https?://\S+', '', text)
+    text = re.sub(r'(https?://)?t\.me/\S+', '', text)
+    text = re.sub(r'(?<!\w)@[A-Za-z0-9_]{3,}', '', text)
+    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
 
     return text.strip()
 
-
-# =========================================================
-# TRANSLATE FOOTBALL NEWS + CONVERT TIME TO ETHIOPIA TIME
-# =========================================================
-
-def translate_to_amharic(text):
-
-    if not text:
-        return ""
-
-    # =====================================================
-    # TIME ZONE CONVERSION
-    # =====================================================
-
-    def convert_times_to_ethiopia(text):
-
-        from datetime import datetime, timedelta, timezone
-        import re
-
-        # Time zones with fixed UTC offsets
-        timezone_offsets = {
-            "UTC": 0,
-            "GMT": 0,
-            "EAT": 3,
-            "WAT": 1,
-            "CAT": 2,
-            "CET": 1,
-            "CEST": 2,
-            "BST": 1,
-            "IST": 5.5,
-        }
-
-        # Example:
-        # 14:00 GMT
-        # 2:00 PM UTC
-        # 18:30 CET
-        pattern = re.compile(
-            r'\b(\d{1,2})(?::(\d{2}))?\s*'
-            r'(AM|PM|am|pm)?\s*'
-            r'(UTC|GMT|EAT|WAT|CAT|CET|CEST|BST|IST)\b',
-            re.IGNORECASE
-        )
-
-        def replace_time(match):
-
-            hour = int(match.group(1))
-
-            minute = (
-                int(match.group(2))
-                if match.group(2)
-                else 0
-            )
-
-            ampm = match.group(3)
-
-            zone = match.group(4).upper()
-
-            # Convert 12-hour time to 24-hour time
-            if ampm:
-
-                ampm_upper = ampm.upper()
-
-                if ampm_upper == "PM" and hour != 12:
-                    hour += 12
-
-                elif ampm_upper == "AM" and hour == 12:
-                    hour = 0
-
-            # Get source timezone offset
-            source_offset = timezone_offsets.get(
-                zone,
-                0
-            )
-
-            # Ethiopia is UTC+3
-            ethiopia_offset = 3
-
-            # Convert source time to Ethiopia time
-            total_minutes = (
-                hour * 60
-                + minute
-                + (ethiopia_offset - source_offset) * 60
-            )
-
-            # Handle crossing midnight
-            total_minutes %= (24 * 60)
-
-            eth_hour = total_minutes // 60
-            eth_minute = total_minutes % 60
-
-            # Use 24-hour international format
-            return (
-                f"{eth_hour:02d}:"
-                f"{eth_minute:02d} "
-                f"Ethiopia time"
-            )
-
-        return pattern.sub(
-            replace_time,
-            text
-        )
-
-    # Convert times BEFORE translation
-    text = convert_times_to_ethiopia(text)
-
-    # =====================================================
-    # WORDS THAT MUST STAY IN ENGLISH
-    # =====================================================
-
-    keep_words = [
-
-        # Match / result terms
-        "Here we go",
-        "Fulltime",
-        "Full-time",
-        "Match Week",
-        "Assist",
-
-        # Competitions
-        "Premier League",
-        "Champions League",
-        "Europa League",
-        "Conference League",
-
-        # Transfer terms
-        "Transfer",
-        "Transfers",
-        "Medical",
-        "Agreement",
-        "Talks",
-        "Bid",
-        "Deal",
-        "Contract",
-        "Loan",
-
-        # Clubs
-        "Manchester City",
-        "Manchester United",
-        "Liverpool",
-        "Arsenal",
-        "Chelsea",
-        "Tottenham",
-        "Newcastle United",
-        "Aston Villa",
-        "West Ham United",
-        "Crystal Palace",
-        "Brighton",
-        "Everton",
-        "Nottingham Forest",
-        "Brentford",
-        "Fulham",
-        "Bournemouth",
-        "Wolverhampton Wanderers",
-        "Wolves",
-        "Leicester City",
-
-        "Real Madrid",
-        "Barcelona",
-        "Bayern Munich",
-        "Paris Saint-Germain",
-        "PSG",
-        "Inter Milan",
-        "AC Milan",
-        "Juventus",
-        "Atletico Madrid",
-        "Borussia Dortmund",
-    ]
-
-    # =====================================================
-    # PROTECT IMPORTANT FOOTBALL WORDS
-    # =====================================================
-
-    protected = {}
-    counter = 0
-
-    keep_words = sorted(
-        keep_words,
-        key=len,
-        reverse=True
-    )
-
-    for word in keep_words:
-
-        pattern = re.compile(
-            re.escape(word),
-            re.IGNORECASE
-        )
-
-        def protect(match):
-
-            nonlocal counter
-
-            counter += 1
-
-            key = (
-                f"FOOTBALL_KEEP_{counter}_X"
-            )
-
-            protected[key] = match.group(0)
-
-            return key
-
-        text = pattern.sub(
-            protect,
-            text
-        )
-
-    # =====================================================
-    # SPLIT INTO SENTENCES
-    # =====================================================
-
-    sentences = re.split(
-        r'(?<=[.!?])\s+',
-        text.strip()
-    )
-
-    translated_sentences = []
-
-    for sentence in sentences:
-
-        sentence = sentence.strip()
-
-        if not sentence:
-            continue
-
-        chunks = []
-
-        if len(sentence) <= 900:
-
-            chunks = [sentence]
-
-        else:
-
-            words = sentence.split()
-
-            current = ""
-
-            for word in words:
-
-                if (
-                    len(current)
-                    + len(word)
-                    + 1
-                    > 850
-                ):
-
-                    if current:
-                        chunks.append(
-                            current.strip()
-                        )
-
-                    current = word
-
-                else:
-
-                    if current:
-                        current += " " + word
-
-                    else:
-                        current = word
-
-            if current:
-                chunks.append(
-                    current.strip()
-                )
-
-        # =================================================
-        # GOOGLE TRANSLATE
-        # =================================================
-
-        for chunk in chunks:
-
-            try:
-
-                url = (
-                    "https://translate.googleapis.com/"
-                    "translate_a/single"
-                    "?client=gtx"
-                    "&sl=en"
-                    "&tl=am"
-                    "&dt=t"
-                    "&q="
-                    + urllib.parse.quote(
-                        chunk
-                    )
-                )
-
-                request = urllib.request.Request(
-                    url,
-                    headers={
-                        "User-Agent":
-                        "Mozilla/5.0"
-                    }
-                )
-
-                with urllib.request.urlopen(
-                    request,
-                    timeout=20
-                ) as response:
-
-                    data = (
-                        response
-                        .read()
-                        .decode("utf-8")
-                    )
-
-                result = json.loads(data)
-
-                translated = ""
-
-                for part in result[0]:
-
-                    if part[0]:
-
-                        translated += part[0]
-
-                if translated:
-
-                    translated_sentences.append(
-                        translated.strip()
-                    )
-
-                else:
-
-                    translated_sentences.append(
-                        chunk
-                    )
-
-            except Exception as e:
-
-                print(
-                    "⚠ Translation error:",
-                    e
-                )
-
-                translated_sentences.append(
-                    chunk
-                )
-
-    # =====================================================
-    # JOIN TRANSLATED SENTENCES
-    # =====================================================
-
-    translated_text = " ".join(
-        translated_sentences
-    )
-
-    # =====================================================
-    # RESTORE PROTECTED FOOTBALL TERMS
-    # =====================================================
-
-    for key, original in protected.items():
-
-        translated_text = (
-            translated_text.replace(
-                key,
-                original
-            )
-        )
-
-    # Clean extra spaces
-    translated_text = re.sub(
-        r'\s+',
-        ' ',
-        translated_text
-    )
-
-    return translated_text.strip()
-    # -----------------------------------------------------
-    # RESTORE ENGLISH FOOTBALL TERMS
-    # -----------------------------------------------------
-
-    for key, original in protected.items():
-
-        translated_text = (
-            translated_text.replace(
-                key,
-                original
-            )
-        )
-
-    # -----------------------------------------------------
-    # CLEAN UP
-    # -----------------------------------------------------
-
-    translated_text = re.sub(
-        r'\s+',
-        ' ',
-        translated_text
-    )
-
-    return translated_text.strip()
 
 # =========================================================
 # FOOTBALL TRANSLATION
@@ -632,35 +164,17 @@ def translate_to_amharic(text):
 
     def convert_times_to_ethiopia(text):
 
-        # Common football-news timezone offsets.
-        # Ethiopia = UTC+3
-
         timezone_offsets = {
-
             "UTC": 0,
             "GMT": 0,
-
             "EAT": 3,
-
             "WAT": 1,
             "CAT": 2,
-
             "CET": 1,
             "CEST": 2,
-
             "BST": 1,
-
             "IST": 5.5,
         }
-
-        # Detect examples such as:
-        #
-        # 14:00 GMT
-        # 14:00 UTC
-        # 2:00 PM GMT
-        # 2 PM UTC
-        # 18:30 CET
-        # 9:00 PM EAT
 
         pattern = re.compile(
             r'\b'
@@ -676,9 +190,7 @@ def translate_to_amharic(text):
 
         def replace_time(match):
 
-            hour = int(
-                match.group(1)
-            )
+            hour = int(match.group(1))
 
             minute = (
                 int(match.group(2))
@@ -687,120 +199,57 @@ def translate_to_amharic(text):
             )
 
             ampm = match.group(3)
-
-            zone = (
-                match.group(4)
-                .upper()
-            )
-
-            # ---------------------------------------------
-            # Convert AM / PM to 24-hour time
-            # ---------------------------------------------
+            zone = match.group(4).upper()
 
             if ampm:
-
                 ampm = ampm.upper()
 
                 if ampm == "PM" and hour != 12:
-
                     hour += 12
 
                 elif ampm == "AM" and hour == 12:
-
                     hour = 0
 
-            # ---------------------------------------------
-            # Source timezone
-            # ---------------------------------------------
+            source_offset = timezone_offsets.get(zone, 0)
 
-            source_offset = (
-                timezone_offsets.get(
-                    zone,
-                    0
-                )
-            )
-
-            # Ethiopia = UTC+3
             ethiopia_offset = 3
 
-            # ---------------------------------------------
-            # Convert to Ethiopia time
-            # ---------------------------------------------
-
             total_minutes = (
-
                 hour * 60
-
                 + minute
-
-                + (
-                    ethiopia_offset
-                    - source_offset
-                ) * 60
+                + (ethiopia_offset - source_offset) * 60
             )
 
-            # Handle crossing midnight
-            total_minutes %= (
-                24 * 60
-            )
+            total_minutes %= (24 * 60)
 
-            eth_hour = (
-                total_minutes // 60
-            )
+            eth_hour = total_minutes // 60
+            eth_minute = total_minutes % 60
 
-            eth_minute = (
-                total_minutes % 60
-            )
-
-            # Keep the converted time clearly marked
             return (
                 f"{eth_hour:02d}:"
                 f"{eth_minute:02d} "
                 f"Ethiopia time"
             )
 
-        return pattern.sub(
-            replace_time,
-            text
-        )
+        return pattern.sub(replace_time, text)
+
+    text = convert_times_to_ethiopia(text)
 
     # =====================================================
-    # CONVERT TIME BEFORE TRANSLATION
-    # =====================================================
-
-    text = convert_times_to_ethiopia(
-        text
-    )
-
-    # =====================================================
-    # FOOTBALL WORDS / PHRASES
-    # THAT MUST STAY IN ENGLISH
+    # FOOTBALL WORDS / PHRASES TO KEEP IN ENGLISH
     # =====================================================
 
     keep_words = [
-
-        # -----------------------------------------------
-        # Match / result
-        # -----------------------------------------------
-
         "Here we go",
         "Fulltime",
         "Full-time",
         "Match Week",
         "Assist",
 
-        # -----------------------------------------------
-        # Competitions
-        # -----------------------------------------------
-
         "Premier League",
         "Champions League",
         "Europa League",
         "Conference League",
-
-        # -----------------------------------------------
-        # Transfer terminology
-        # -----------------------------------------------
 
         "Transfer",
         "Transfers",
@@ -811,10 +260,6 @@ def translate_to_amharic(text):
         "Deal",
         "Contract",
         "Loan",
-
-        # -----------------------------------------------
-        # English clubs
-        # -----------------------------------------------
 
         "Manchester City",
         "Manchester United",
@@ -836,10 +281,6 @@ def translate_to_amharic(text):
         "Wolves",
         "Leicester City",
 
-        # -----------------------------------------------
-        # European clubs
-        # -----------------------------------------------
-
         "Real Madrid",
         "Barcelona",
         "Bayern Munich",
@@ -852,57 +293,33 @@ def translate_to_amharic(text):
         "Borussia Dortmund",
     ]
 
-    # =====================================================
-    # PROTECT IMPORTANT ENGLISH FOOTBALL TERMS
-    # =====================================================
-
     protected = {}
-
     counter = 0
 
-    # Longest phrases first
-    keep_words = sorted(
-        keep_words,
-        key=len,
-        reverse=True
-    )
+    keep_words = sorted(keep_words, key=len, reverse=True)
 
     for word in keep_words:
 
-        pattern = re.compile(
-            re.escape(word),
-            re.IGNORECASE
-        )
+        pattern = re.compile(re.escape(word), re.IGNORECASE)
 
         def protect(match):
-
             nonlocal counter
 
             counter += 1
 
-            key = (
-                f"FOOTBALL_KEEP_{counter}_X"
-            )
+            key = f"FOOTBALL_KEEP_{counter}_X"
 
-            protected[key] = (
-                match.group(0)
-            )
+            protected[key] = match.group(0)
 
             return key
 
-        text = pattern.sub(
-            protect,
-            text
-        )
+        text = pattern.sub(protect, text)
 
     # =====================================================
     # SPLIT NEWS INTO SENTENCES
     # =====================================================
 
-    sentences = re.split(
-        r'(?<=[.!?])\s+',
-        text.strip()
-    )
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
 
     translated_sentences = []
 
@@ -915,54 +332,32 @@ def translate_to_amharic(text):
 
         chunks = []
 
-        # Keep Google Translate requests reasonably short
-
         if len(sentence) <= 900:
-
-            chunks = [
-                sentence
-            ]
+            chunks = [sentence]
 
         else:
 
             words = sentence.split()
-
             current = ""
 
             for word in words:
 
-                if (
-                    len(current)
-                    + len(word)
-                    + 1
-                    > 850
-                ):
+                if len(current) + len(word) + 1 > 850:
 
                     if current:
-
-                        chunks.append(
-                            current.strip()
-                        )
+                        chunks.append(current.strip())
 
                     current = word
 
                 else:
 
                     if current:
-
-                        current += (
-                            " " + word
-                        )
-
+                        current += " " + word
                     else:
-
                         current = word
 
             if current:
-
-                chunks.append(
-                    current.strip()
-                )
+                chunks.append(current.strip())
 
         # =================================================
         # GOOGLE TRANSLATE
@@ -980,19 +375,12 @@ def translate_to_amharic(text):
                     "&tl=am"
                     "&dt=t"
                     "&q="
-                    + urllib.parse.quote(
-                        chunk
-                    )
+                    + urllib.parse.quote(chunk)
                 )
 
-                request = (
-                    urllib.request.Request(
-                        url,
-                        headers={
-                            "User-Agent":
-                            "Mozilla/5.0"
-                        }
-                    )
+                request = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": "Mozilla/5.0"}
                 )
 
                 with urllib.request.urlopen(
@@ -1000,56 +388,28 @@ def translate_to_amharic(text):
                     timeout=20
                 ) as response:
 
-                    data = (
-                        response
-                        .read()
-                        .decode("utf-8")
-                    )
+                    data = response.read().decode("utf-8")
 
-                result = json.loads(
-                    data
-                )
+                result = json.loads(data)
 
                 translated = ""
 
                 for part in result[0]:
 
                     if part[0]:
-
-                        translated += (
-                            part[0]
-                        )
+                        translated += part[0]
 
                 if translated:
-
-                    translated_sentences.append(
-                        translated.strip()
-                    )
-
+                    translated_sentences.append(translated.strip())
                 else:
-
-                    translated_sentences.append(
-                        chunk
-                    )
+                    translated_sentences.append(chunk)
 
             except Exception as e:
 
-                print(
-                    "⚠ Translation error:",
-                    e
-                )
+                print("⚠ Translation error:", e)
+                translated_sentences.append(chunk)
 
-                translated_sentences.append(
-                    chunk
-                )
-
-    # =====================================================
-    # JOIN TRANSLATED SENTENCES
-    # =====================================================
-
-    translated_text = " ".join(
-        translated_sentences
-    )
+    translated_text = " ".join(translated_sentences)
 
     # =====================================================
     # RESTORE ENGLISH FOOTBALL TERMS
@@ -1057,25 +417,136 @@ def translate_to_amharic(text):
 
     for key, original in protected.items():
 
-        translated_text = (
-            translated_text.replace(
-                key,
-                original
-            )
+        translated_text = translated_text.replace(
+            key,
+            original
         )
 
-    # =====================================================
-    # CLEAN EXTRA SPACES
-    # =====================================================
-
-    translated_text = re.sub(
-        r'\s+',
-        ' ',
-        translated_text
-    )
+    translated_text = re.sub(r'\s+', ' ', translated_text)
 
     return translated_text.strip()
-    
+
+
+# =========================================================
+# ETHIOPIAN CALENDAR DATE + ETHIOPIAN CLOCK
+# =========================================================
+
+def get_ethiopian_date_and_session():
+
+    utc_now = datetime.now(timezone.utc)
+
+    ethiopia_now = (
+        utc_now + timedelta(hours=3)
+    )
+
+    now = ethiopia_now.replace(tzinfo=None)
+
+    year = now.year
+
+    new_year_day = (
+        12
+        if (year + 1) % 4 == 0
+        else 11
+    )
+
+    new_year = datetime(
+        year,
+        9,
+        new_year_day
+    )
+
+    if now < new_year:
+
+        eth_year = year - 9
+
+        previous_gregorian_year = year - 1
+
+        previous_new_year_day = (
+            12
+            if year % 4 == 0
+            else 11
+        )
+
+        new_year = datetime(
+            previous_gregorian_year,
+            9,
+            previous_new_year_day
+        )
+
+    else:
+
+        eth_year = year - 8
+
+    days = (now - new_year).days
+
+    eth_month = (days // 30) + 1
+    eth_day = (days % 30) + 1
+
+    months = {
+        1: "መስከረም",
+        2: "ጥቅምት",
+        3: "ኅዳር",
+        4: "ታኅሣሥ",
+        5: "ጥር",
+        6: "የካቲት",
+        7: "መጋቢት",
+        8: "ሚያዝያ",
+        9: "ግንቦት",
+        10: "ሰኔ",
+        11: "ሐምሌ",
+        12: "ነሐሴ",
+        13: "ጳጉሜን"
+    }
+
+    # =====================================================
+    # ETHIOPIAN CLOCK
+    # =====================================================
+    #
+    # 06:00 AM international → 12:00 Ethiopian
+    # 07:00 AM international → 01:00 Ethiopian
+    # 12:00 PM international → 06:00 Ethiopian
+    # 06:00 PM international → 12:00 Ethiopian
+    # 08:00 PM international → 02:00 Ethiopian
+    # 12:00 AM international → 06:00 Ethiopian
+    #
+    # =====================================================
+
+    if 6 <= now.hour < 12:
+        session = "ጠዋት | Morning"
+
+    elif 12 <= now.hour < 14:
+        session = "እኩለ ቀን | Midday"
+
+    elif 14 <= now.hour < 18:
+        session = "ከሰዓት | Afternoon"
+
+    elif 18 <= now.hour < 21:
+        session = "ማታ | Evening"
+
+    else:
+        session = "ሌሊት | Night"
+
+    ethiopian_hour = (
+        (now.hour - 6) % 12
+    )
+
+    if ethiopian_hour == 0:
+        ethiopian_hour = 12
+
+    time_text = (
+        f"{ethiopian_hour:02d}:"
+        f"{now.minute:02d}"
+    )
+
+    return (
+        f"{months[eth_month]} "
+        f"{eth_day}, "
+        f"{eth_year}",
+        session,
+        time_text
+    )
+
+
 # =========================================================
 # CREATE FINAL POST
 # =========================================================
@@ -1087,16 +558,12 @@ def create_post(text):
     if not text:
         return ""
 
-    translated = translate_to_amharic(
-        text
-    )
+    translated = translate_to_amharic(text)
 
     if not translated:
         translated = text
 
-    translated = html.escape(
-        translated
-    )
+    translated = html.escape(translated)
 
     (
         eth_date,
@@ -1105,26 +572,16 @@ def create_post(text):
     ) = get_ethiopian_date_and_session()
 
     return (
-
-        f"📅 <b>{eth_date} | "
-        f"{session}</b>\n"
-
+        f"📅 <b>{eth_date} | {session}</b>\n"
         f"🕒 <b>{ethiopian_time}</b>\n"
-
         "⚽ <b>አጭር የስፖርት ዜና "
         "ለቤተሰቦቻችን</b>\n\n"
-
         + translated
-
         + "\n\n"
-
         "━━━━━━━━━━━━━━\n"
-
         "📢 <b>ሼር ያድርጉ፣ "
         "Like አትርሱ —❤️</b>\n"
-
         "❤️  🔥  👍  😂  😢\n"
-
         "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
 
@@ -1135,12 +592,9 @@ def create_post(text):
 
 def is_advertisement(message):
 
-    text = (
-        message.message or ""
-    ).lower()
+    text = (message.message or "").lower()
 
     ad_words = [
-
         ".apk",
         ".exe",
         "download apk",
@@ -1160,8 +614,6 @@ def is_advertisement(message):
 
         if word in text:
             return True
-
-    # Check attached file name
 
     if message.file:
 
@@ -1184,7 +636,6 @@ def is_advertisement(message):
                     ".scr"
                 )
             ):
-
                 return True
 
             for word in [
@@ -1219,67 +670,26 @@ async def process_message(
             message.message or ""
         )
 
-        # -------------------------------------------------
-        # BLOCK ADVERTISEMENTS
-        # -------------------------------------------------
-
         if is_advertisement(message):
 
-            print(
-                "🚫 ADVERTISEMENT BLOCKED"
-            )
-
-            print(
-                "SOURCE:",
-                source_username
-            )
-
-            print(
-                "TEXT:",
-                original_text[:300]
-            )
-
-            # Advertisement is considered processed,
-            # but it is NOT counted as a successful post.
+            print("🚫 ADVERTISEMENT BLOCKED")
+            print("SOURCE:", source_username)
+            print("TEXT:", original_text[:300])
 
             return True, False
 
-        print(
-            "\n" + "=" * 60
-        )
-
+        print("\n" + "=" * 60)
         print("📰 NEW NEWS")
-
-        print(
-            "SOURCE:",
-            source_username
-        )
-
-        print(
-            "DESTINATION:",
-            destination
-        )
-
-        print(
-            "MESSAGE ID:",
-            message.id
-        )
-
+        print("SOURCE:", source_username)
+        print("DESTINATION:", destination)
+        print("MESSAGE ID:", message.id)
         print("TEXT:")
+        print(original_text[:500])
 
-        print(
-            original_text[:500]
-        )
-
-        post = create_post(
-            original_text
-        )
-
-        # Buttons every 10 successful posts
+        post = create_post(original_text)
 
         show_buttons = (
-            (post_count + 1)
-            % BUTTON_INTERVAL == 0
+            (post_count + 1) % BUTTON_INTERVAL == 0
         )
 
         buttons = (
@@ -1288,97 +698,55 @@ async def process_message(
             else None
         )
 
-        # -------------------------------------------------
-        # MEDIA
-        # -------------------------------------------------
-
         if message.media:
 
-            print(
-                "📷 Media detected"
-            )
+            print("📷 Media detected")
+            print("⬇ Downloading media...")
 
-            print(
-                "⬇ Downloading media..."
-            )
-
-            media = (
-                await user_client.download_media(
-                    message
-                )
-            )
+            media = await user_client.download_media(message)
 
             if media:
 
                 await bot_client.send_file(
-
                     destination,
-
                     media,
-
                     caption=post,
-
                     parse_mode="html",
-
                     buttons=buttons,
-
                     force_document=False
                 )
 
-                print(
-                    "✅ MEDIA POSTED TO",
-                    destination
-                )
+                print("✅ MEDIA POSTED TO", destination)
 
                 try:
-
                     os.remove(media)
-
                 except Exception:
                     pass
 
                 return True, True
 
-            print(
-                "⚠ Media download failed"
-            )
-
-        # -------------------------------------------------
-        # TEXT ONLY
-        # -------------------------------------------------
+            print("⚠ Media download failed")
 
         if post:
 
             await bot_client.send_message(
-
                 destination,
-
                 post,
-
                 parse_mode="html",
-
                 buttons=buttons
             )
 
-            print(
-                "✅ TEXT POSTED TO",
-                destination
-            )
+            print("✅ TEXT POSTED TO", destination)
 
             return True, True
 
-        print(
-            "⚠ Message contained no usable text"
-        )
+        print("⚠ Message contained no usable text")
 
         return True, False
 
     except Exception as e:
 
-        print(
-            "❌ ERROR PROCESSING MESSAGE:",
-            e
-        )
+        print("❌ ERROR PROCESSING MESSAGE:", e)
 
         return False, False
 
@@ -1397,9 +765,7 @@ async def check_channel(
 
     try:
 
-        entity = await user_client.get_entity(
-            channel
-        )
+        entity = await user_client.get_entity(channel)
 
         username = getattr(
             entity,
@@ -1407,57 +773,23 @@ async def check_channel(
             channel
         )
 
-        print(
-            "\n" + "-" * 60
-        )
-
-        print(
-            "🔎 Checking:",
-            username
-        )
-
-        print(
-            "📢 Destination:",
-            destination
-        )
-
-        # =================================================
-        # IMPORTANT SAFETY CHECK
-        # =================================================
-        #
-        # If this is a brand-new source and it does not
-        # exist in state.json, DO NOT process its old
-        # messages.
-        #
-        # We start from the latest message and wait for
-        # NEW messages only.
-        #
-        # This prevents a new source from flooding the
-        # destination channel with old posts.
-        # =================================================
+        print("\n" + "-" * 60)
+        print("🔎 Checking:", username)
+        print("📢 Destination:", destination)
 
         if channel not in state:
 
-            print(
-                "🆕 NEW SOURCE DETECTED"
-            )
+            print("🆕 NEW SOURCE DETECTED")
+            print("🛡 Initializing safely...")
 
-            print(
-                "🛡 Initializing safely..."
-            )
-
-            latest_messages = (
-                await user_client.get_messages(
-                    entity,
-                    limit=1
-                )
+            latest_messages = await user_client.get_messages(
+                entity,
+                limit=1
             )
 
             if latest_messages:
 
-                latest_id = (
-                    latest_messages[0].id
-                )
+                latest_id = latest_messages[0].id
 
                 state[channel] = latest_id
 
@@ -1471,22 +803,13 @@ async def check_channel(
             else:
 
                 state[channel] = 0
-
                 save_state(state)
 
-                print(
-                    "ℹ Channel has no messages"
-                )
+                print("ℹ Channel has no messages")
 
-            print(
-                "⏳ Waiting for NEW messages only."
-            )
+            print("⏳ Waiting for NEW messages only.")
 
             return
-
-        # =================================================
-        # EXISTING SOURCE
-        # =================================================
 
         last_id = int(
             state.get(
@@ -1495,43 +818,29 @@ async def check_channel(
             )
         )
 
-        print(
-            "Last processed ID:",
-            last_id
-        )
+        print("Last processed ID:", last_id)
 
         messages = []
 
         async for message in user_client.iter_messages(
-
             entity,
-
             min_id=last_id,
-
             reverse=True
-
         ):
 
-            messages.append(
-                message
-            )
+            messages.append(message)
 
         if not messages:
 
-            print(
-                "ℹ No new messages"
-            )
+            print("ℹ No new messages")
 
             return
 
         print(
-            f"📥 Found {len(messages)} "
-            f"new message(s)"
+            f"📥 Found {len(messages)} new message(s)"
         )
 
-        highest_successful_id = (
-            last_id
-        )
+        highest_successful_id = last_id
 
         post_count = int(
             state.get(
@@ -1542,81 +851,53 @@ async def check_channel(
 
         for message in messages:
 
-            success, posted = (
-                await process_message(
-
-                    user_client,
-
-                    bot_client,
-
-                    message,
-
-                    username,
-
-                    destination,
-
-                    post_count
-                )
+            success, posted = await process_message(
+                user_client,
+                bot_client,
+                message,
+                username,
+                destination,
+                post_count
             )
 
             if success:
 
                 highest_successful_id = max(
-
                     highest_successful_id,
-
                     message.id
                 )
-
-                # Count only successfully
-                # published news posts.
 
                 if posted:
 
                     post_count += 1
 
-                    state[
-                        "_successful_posts"
-                    ] = post_count
+                    state["_successful_posts"] = post_count
 
                     if (
                         post_count
-                        % BUTTON_INTERVAL == 0
+                        % BUTTON_INTERVAL
+                        == 0
                     ):
 
                         print(
-                            f"🔘 Push buttons "
-                            f"added to post "
-                            f"#{post_count}"
+                            f"🔘 Push buttons added "
+                            f"to post #{post_count}"
                         )
 
                 await asyncio.sleep(2)
 
             else:
 
+                print("⚠ Message failed.")
                 print(
-                    "⚠ Message failed."
-                )
-
-                print(
-                    "⚠ State will NOT move "
-                    "past this message."
+                    "⚠ State will NOT move past this message."
                 )
 
                 break
 
-        # =================================================
-        # SAVE STATE
-        # =================================================
+        if highest_successful_id > last_id:
 
-        if (
-            highest_successful_id
-            > last_id
-        ):
-
-            state[channel] = (
-                highest_successful_id
-            )
+            state[channel] = highest_successful_id
 
             save_state(state)
 
@@ -1627,11 +908,7 @@ async def check_channel(
 
     except Exception as e:
 
-        print(
-            "❌ CHANNEL ERROR:",
-            channel
-        )
-
+        print("❌ CHANNEL ERROR:", channel)
         print(e)
 
 
@@ -1641,141 +918,77 @@ async def check_channel(
 
 async def main():
 
-    print(
-        "\n" + "=" * 60
-    )
-
-    print(
-        "🚀 HABESHA SPORT GITHUB BOT"
-    )
-
-    print(
-        "=" * 60
-    )
+    print("\n" + "=" * 60)
+    print("🚀 HABESHA SPORT GITHUB BOT")
+    print("=" * 60)
 
     state = load_state()
 
     user_client = TelegramClient(
-
         StringSession(USER_SESSION),
-
         API_ID,
-
         API_HASH,
-
         connection_retries=10,
-
         retry_delay=5,
-
         request_retries=10,
-
         auto_reconnect=True
     )
 
     bot_client = TelegramClient(
-
         StringSession(),
-
         API_ID,
-
         API_HASH,
-
         connection_retries=10,
-
         retry_delay=5,
-
         request_retries=10,
-
         auto_reconnect=True
     )
 
     try:
 
-        # =================================================
-        # CONNECT USER ACCOUNT
-        # =================================================
-
-        print(
-            "\n🔐 Connecting Telegram user..."
-        )
+        print("\n🔐 Connecting Telegram user...")
 
         await user_client.start()
 
-        print(
-            "✅ Telegram user connected"
-        )
+        print("✅ Telegram user connected")
 
-        # =================================================
-        # CONNECT BOT
-        # =================================================
-
-        print(
-            "\n🤖 Connecting Telegram bot..."
-        )
+        print("\n🤖 Connecting Telegram bot...")
 
         await bot_client.start(
             bot_token=BOT_TOKEN
         )
 
-        print(
-            "✅ Telegram bot connected"
-        )
+        print("✅ Telegram bot connected")
 
-        # =================================================
-        # START SOURCES
-        # =================================================
-
-        print(
-            "\n🔎 Checking source channels..."
-        )
+        print("\n🔎 Checking source channels...")
 
         print(
             f"📊 Total sources: "
             f"{len(SOURCE_CHANNELS)}"
         )
 
-        # =================================================
-        # CHECK EVERY SOURCE
-        # =================================================
-
         for channel in SOURCE_CHANNELS:
 
-            destination = (
-                SOURCE_ROUTES.get(
-                    channel,
-                    DEFAULT_DESTINATION
-                )
+            destination = SOURCE_ROUTES.get(
+                channel,
+                DEFAULT_DESTINATION
             )
 
             await check_channel(
-
                 user_client,
-
                 bot_client,
-
                 channel,
-
                 destination,
-
                 state
             )
 
-        print(
-            "\n" + "=" * 60
-        )
-
-        print(
-            "✅ CHECK COMPLETE"
-        )
-
-        print(
-            "=" * 60
-        )
+        print("\n" + "=" * 60)
+        print("✅ CHECK COMPLETE")
+        print("=" * 60)
 
     finally:
 
         await bot_client.disconnect()
-
         await user_client.disconnect()
 
         print(
@@ -1788,5 +1001,4 @@ async def main():
 # =========================================================
 
 if __name__ == "__main__":
-
     asyncio.run(main())
