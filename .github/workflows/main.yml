@@ -35,6 +35,13 @@ jobs:
           API_HASH: ${{ secrets.API_HASH }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           USER_SESSION: ${{ secrets.USER_SESSION }}
+
+          FB_ETHIO_SPORT_PAGE_ID: ${{ secrets.FB_ETHIO_SPORT_PAGE_ID }}
+          FB_ETHIO_SPORT_PAGE_TOKEN: ${{ secrets.FB_ETHIO_SPORT_PAGE_TOKEN }}
+
+          FB_ARSENAL_PAGE_ID: ${{ secrets.FB_ARSENAL_PAGE_ID }}
+          FB_ARSENAL_PAGE_TOKEN: ${{ secrets.FB_ARSENAL_PAGE_TOKEN }}
+
         run: |
           python -u github_bot.py
 
