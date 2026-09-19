@@ -427,7 +427,7 @@ async def process_message(
 
         if post:
             await bot_client.send_message(
-                DESTINATION_CHANNEL,
+                destination,
                 post,
                 parse_mode="html",
                 buttons=buttons
