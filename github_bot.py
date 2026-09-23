@@ -22,6 +22,15 @@ API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 USER_SESSION = os.environ["USER_SESSION"]
 
+# =========================================================
+# GITHUB ACTIONS SCHEDULE GROUP
+# =========================================================
+
+BOT_SCHEDULE = os.environ.get(
+    "BOT_SCHEDULE",
+    ""
+).strip()
+
 
 # =========================================================
 # DEFAULT DESTINATION
@@ -104,6 +113,65 @@ GENERAL_SOURCES = [
 SOURCE_CHANNELS = GENERAL_SOURCES + list(
     SOURCE_ROUTES.keys()
 )
+
+# =========================================================
+# SEPARATE 5-MINUTE SCHEDULE GROUPS
+# =========================================================
+# Each workflow schedule checks ONLY its own group.
+# This prevents all source channels from being checked at once.
+
+SCHEDULE_GROUPS = {
+
+    # GENERAL — :00, :05, :10, ...
+    "0,5,10,15,20,25,30,35,40,45,50,55 * * * *": [
+        "@sky_sports_world",
+        "@Espnfc_news",
+    ],
+
+    # ARSENAL — :01, :06, :11, ...
+    "1,6,11,16,21,26,31,36,41,46,51,56 * * * *": [
+        "@arsenal_gunners_london",
+        "@Arsenalc",
+        "@gunnersfooty",
+        "@GUNNERS",
+        "@ZENA_ARSENAL",
+        "@ETHIO_ARSENAL",
+    ],
+
+    # LIVERPOOL — :02, :07, :12, ...
+    "2,7,12,17,22,27,32,37,42,47,52,57 * * * *": [
+        "@LiverpoolFCNews",
+        "@liverpool",
+        "@lfconline",
+    ],
+
+    # MAN CITY — :03, :08, :13, ...
+    "3,8,13,18,23,28,33,38,43,48,53,58 * * * *": [
+        "@Manchester_City",
+        "@manchester_city_cf",
+        "@mancity247",
+    ],
+
+    # CHELSEA — :04, :09, :14, ...
+    "4,9,14,19,24,29,34,39,44,49,54,59 * * * *": [
+        "@Chelsea_fc_worldwide",
+        "@chelseafcnews01",
+        "@chelseaanalysis",
+        "@chelseasunsport",
+    ],
+
+    # MAN UNITED — :05, :10, :15, ...
+    # This has the same minute pattern as General, but a different
+    # cron string, so GitHub Actions can identify the schedule group.
+    "5,10,15,20,25,30,35,40,45,50,55,0 * * * *": [
+        "@ManchesterUnited",
+        "@Empire_MU",
+        "@manchester_united_uk",
+        "@manchesterunitedsunsport",
+        "@Manchester_Unitedfanns",
+        "@man_united_ethio_fan",
+    ],
+}
 
 
 # =========================================================
@@ -2207,12 +2275,42 @@ async def main():
             "source channels..."
         )
 
-        print(
-            f"📊 Total sources: "
-            f"{len(SOURCE_CHANNELS)}"
-        )
+        # =================================================
+        # CHECK ONLY THE GROUP TRIGGERED BY THIS SCHEDULE
+        # =================================================
 
-        for channel in SOURCE_CHANNELS:
+        if BOT_SCHEDULE in SCHEDULE_GROUPS:
+
+            channels_to_check = SCHEDULE_GROUPS[
+                BOT_SCHEDULE
+            ]
+
+            print(
+                "\\n⏰ Triggered schedule:",
+                BOT_SCHEDULE
+            )
+
+            print(
+                "📊 Group sources:",
+                len(channels_to_check)
+            )
+
+        else:
+
+            # Manual workflow run:
+            # check everything, as before.
+            channels_to_check = SOURCE_CHANNELS
+
+            print(
+                "\\n🖐 Manual workflow run"
+            )
+
+            print(
+                "📊 Checking all sources:",
+                len(channels_to_check)
+            )
+
+        for channel in channels_to_check:
 
             destination = (
                 SOURCE_ROUTES.get(
