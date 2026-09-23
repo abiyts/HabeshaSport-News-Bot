@@ -91,21 +91,9 @@ SOURCE_ROUTES = {
 
 GENERAL_SOURCES = [
 
-    "@br_football_news",
-    "@Football433_uk",
+    "@sky_sports_world",
     "@Espnfc_news",
-    "@espndc_news",
-    "@Premier_League_Update",
-    "@Espn_Football_News_UK",
-    "@squawka_football_news",
-    "@mainfootball",
-    "@transfermarkt_off",
-    "@mtransfers",
-    "@sport_hub_football",
-    "@transfer_news_football",
 
-    # Newly added sources
-    "@goal_sport_football",
 ]
 
 
