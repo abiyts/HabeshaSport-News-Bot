@@ -49,12 +49,7 @@ SOURCE_ROUTES = {
     # ARSENAL
     # -------------------------
 
-    "@arsenal_gunners_london": "@arsenaletgunners",
-    "@Arsenalc": "@arsenaletgunners",
-    "@gunnersfooty": "@arsenaletgunners",
-    "@GUNNERS": "@arsenaletgunners",
-    "@ZENA_ARSENAL": "@arsenaletgunners",
-    "@ETHIO_ARSENAL": "@arsenaletgunners",
+    "@arsenal_london": "@arsenaletgunners",
 
     # -------------------------
     # LIVERPOOL
@@ -130,12 +125,7 @@ SCHEDULE_GROUPS = {
 
     # ARSENAL — :01, :06, :11, ...
     "1,6,11,16,21,26,31,36,41,46,51,56 * * * *": [
-        "@arsenal_gunners_london",
-        "@Arsenalc",
-        "@gunnersfooty",
-        "@GUNNERS",
-        "@ZENA_ARSENAL",
-        "@ETHIO_ARSENAL",
+        "@arsenal_london",
     ],
 
     # LIVERPOOL — :02, :07, :12, ...
@@ -833,6 +823,78 @@ PUSH_BUTTONS = [
 ]
 
 
+# Club-specific buttons:
+# Each club post gets only its own Telegram channel + Facebook page.
+CLUB_BUTTONS = {
+
+    "@arsenaletgunners": [
+        [
+            Button.url(
+                "🔴⚪ Arsenal Telegram",
+                "https://t.me/arsenaletgunners"
+            ),
+            Button.url(
+                "📘 Arsenal Facebook",
+                "https://www.facebook.com/Arsenal"
+            ),
+        ]
+    ],
+
+    "@liverpoolethiop": [
+        [
+            Button.url(
+                "🔴 Liverpool Telegram",
+                "https://t.me/liverpoolethiop"
+            ),
+            Button.url(
+                "📘 Liverpool Facebook",
+                "https://www.facebook.com/LiverpoolFC"
+            ),
+        ]
+    ],
+
+    "@mancitynewset": [
+        [
+            Button.url(
+                "🔵 Man City Telegram",
+                "https://t.me/mancitynewset"
+            ),
+            Button.url(
+                "📘 Man City Facebook",
+                "https://www.facebook.com/mancity"
+            ),
+        ]
+    ],
+
+    "@chelseafcet": [
+        [
+            Button.url(
+                "🔵 Chelsea Telegram",
+                "https://t.me/chelseafcet"
+            ),
+            Button.url(
+                "📘 Chelsea Facebook",
+                "https://www.facebook.com/ChelseaFC"
+            ),
+        ]
+    ],
+
+    "@manunitedethiopia": [
+        [
+            Button.url(
+                "🔴 Man United Telegram",
+                "https://t.me/manunitedethiopia"
+            ),
+            Button.url(
+                "📘 Man United Facebook",
+                "https://www.facebook.com/manchesterunited"
+            ),
+        ]
+    ],
+}
+
+
+
 # =========================================================
 # STATE FILE
 # =========================================================
@@ -1481,122 +1543,83 @@ def get_ethiopian_date_and_session():
 
 def create_post(text, destination):
 
-    text = remove_links(
-        text
-    )
+    text = remove_links(text)
 
     if not text:
         return ""
 
-    translated = translate_to_amharic(
-        text
-    )
+    translated = translate_to_amharic(text)
 
     if not translated:
         translated = text
 
-    translated = html.escape(
-        translated
-    )
-
-    (
-        eth_date,
-        session,
-        ethiopian_time
-    ) = get_ethiopian_date_and_session()
+    translated = html.escape(translated)
 
     # =====================================================
-    # CHANNEL-SPECIFIC BRANDING
+    # GENERAL CHANNEL
     # =====================================================
 
-    channel_branding = {
+    if destination == DEFAULT_DESTINATION:
 
-        "@habeshasport": {
-            "header": (
-                "⚽ <b>HABESHA SPORT | "
-                "አጭር የእግር ኳስ ዜና</b>"
-            ),
-            "footer": (
-                "📢 <b>Habesha Sport</b> | "
-                "ኢትዮ ስፖርት"
-            )
-        },
+        eth_date, session, ethiopian_time = get_ethiopian_date_and_session()
 
-        "@arsenaletgunners": {
-            "header": (
-                "🔴⚪ <b>ARSENAL NEWS | "
-                "የአርሰናል ዜና</b>"
-            ),
-            "footer": (
-                "🔴⚪ <b>Arsenal Ethiopia</b> | "
-                "አርሰናል ኢትዮጵያ"
-            )
-        },
+        return (
+            f"📅 <b>{eth_date} | {session}</b>\n"
+            f"🕒 <b>{ethiopian_time}</b>\n"
+            "⚽ <b>አጭር የስፖርት ዜና ለቤተሰቦቻችን</b>\n\n"
+            + translated
+            + "\n\n"
+            "━━━━━━━━━━━━━━\n"
+            "📢 <b>Habesha Sport family, support us!</b>\n"
+            "❤️ Like • 🔄 Share • 💬 Comment\n"
+            "💖 <b>እንወዳችኋለን!</b> ❤️"
+        )
 
-        "@liverpoolethiop": {
-            "header": (
-                "🔴 <b>LIVERPOOL NEWS | "
-                "የሊቨርፑል ዜና</b>"
-            ),
-            "footer": (
-                "🔴 <b>Liverpool Ethiopia</b> | "
-                "ሊቨርፑል ኢትዮጵያ"
-            )
-        },
+    # =====================================================
+    # CLUB CHANNELS
+    # No date, time, or header — go directly to the news.
+    # =====================================================
 
-        "@mancitynewset": {
-            "header": (
-                "🔵 <b>MAN CITY NEWS | "
-                "የማን ሲቲ ዜና</b>"
-            ),
-            "footer": (
-                "🔵 <b>Man City Ethiopia</b> | "
-                "ማን ሲቲ ኢትዮጵያ"
-            )
-        },
-
-        "@chelseafcet": {
-            "header": (
-                "🔵 <b>CHELSEA NEWS | "
-                "የቼልሲ ዜና</b>"
-            ),
-            "footer": (
-                "🔵 <b>Chelsea Ethiopia</b> | "
-                "ቼልሲ ኢትዮጵያ"
-            )
-        },
-
-        "@manunitedethiopia": {
-            "header": (
-                "🔴 <b>MAN UNITED NEWS | "
-                "የማን ዩናይትድ ዜና</b>"
-            ),
-            "footer": (
-                "🔴 <b>Man United Ethiopia</b> | "
-                "ማን ዩናይትድ ኢትዮጵያ"
-            )
-        }
+    club_footers = {
+        "@arsenaletgunners": (
+            "🔴⚪ <b>Gunners family, support us!</b>\n"
+            "❤️ Like • 🔄 Share • 💬 Comment\n"
+            "<b>COYG! 🔴⚪</b>"
+        ),
+        "@liverpoolethiop": (
+            "🔴 <b>Reds family, support us!</b>\n"
+            "❤️ Like • 🔄 Share • 💬 Comment\n"
+            "<b>YNWA ❤️</b>"
+        ),
+        "@mancitynewset": (
+            "🔵 <b>City family, support us!</b>\n"
+            "❤️ Like • 🔄 Share • 💬 Comment\n"
+            "<b>Come on City! 💙</b>"
+        ),
+        "@chelseafcet": (
+            "🔵 <b>Chelsea family, support us!</b>\n"
+            "❤️ Like • 🔄 Share • 💬 Comment\n"
+            "<b>KTBFFH 💙</b>"
+        ),
+        "@manunitedethiopia": (
+            "🔴 <b>United family, support us!</b>\n"
+            "❤️ Like • 🔄 Share • 💬 Comment\n"
+            "<b>Glory Glory Man United! 🔴</b>"
+        ),
     }
 
-    branding = channel_branding.get(
-        destination,
-        channel_branding["@habeshasport"]
-    )
+    footer = club_footers.get(destination)
 
-    return (
-        f"📅 <b>{eth_date} | "
-        f"{session}</b>\n"
-        f"🕒 <b>{ethiopian_time}</b>\n"
-        f"{branding['header']}\n\n"
-        + translated
-        + "\n\n"
-        "━━━━━━━━━━━━━━\n"
-        f"{branding['footer']}\n"
-        "📲 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
-        "❤️  🔥  👍  😂  😢\n"
-        "💖 <b>እንወዳችኋለን!</b> ❤️"
-    )
+    if footer:
+        return (
+            translated
+            + "\n\n"
+            "━━━━━━━━━━━━━━\n"
+            + footer
+        )
 
+    # Safe fallback for any unexpected destination.
+    return translated
 
 
 # =========================================================
@@ -1824,11 +1847,15 @@ async def process_message(
             == 0
         )
 
-        buttons = (
-            PUSH_BUTTONS
-            if show_buttons
-            else None
-        )
+        if show_buttons:
+            if destination == DEFAULT_DESTINATION:
+                # General news channel: show all channel buttons.
+                buttons = PUSH_BUTTONS
+            else:
+                # Club channel: show only that club's Telegram + Facebook.
+                buttons = CLUB_BUTTONS.get(destination)
+        else:
+            buttons = None
 
         media = None
 
