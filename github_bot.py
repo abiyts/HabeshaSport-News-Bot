@@ -49,7 +49,7 @@ SOURCE_ROUTES = {
     # ARSENAL
     # -------------------------
 
-    "@arsenal_gunners_london": "@arsenaletgunners",
+    "@arsenal_london": "@arsenaletgunners",
     "@Arsenalc": "@arsenaletgunners",
     "@gunnersfooty": "@arsenaletgunners",
     "@GUNNERS": "@arsenaletgunners",
@@ -130,7 +130,7 @@ SCHEDULE_GROUPS = {
 
     # ARSENAL — :01, :06, :11, ...
     "1,6,11,16,21,26,31,36,41,46,51,56 * * * *": [
-        "@arsenal_gunners_london",
+        "@arsenal_london",
         "@Arsenalc",
         "@gunnersfooty",
         "@GUNNERS",
@@ -1511,18 +1511,26 @@ def create_post(text, destination):
         channel_branding["@habeshasport"]
     )
 
+    # Date/time is shown only on the General Habesha Sport channel.
+    # Club channels keep their branding header without date/time.
+    if destination == "@habeshasport":
+        date_time_header = (
+            f"📅 <b>{eth_date} | {session}</b>\n"
+            f"🕒 <b>{ethiopian_time}</b>\n"
+        )
+    else:
+        date_time_header = ""
+
     return (
-        f"📅 <b>{eth_date} | "
-        f"{session}</b>\n"
-        f"🕒 <b>{ethiopian_time}</b>\n"
-        f"{branding['header']}\n\n"
+        date_time_header
+        + f"{branding['header']}\n\n"
         + translated
         + "\n\n"
-        "━━━━━━━━━━━━━━\n"
-        f"{branding['footer']}\n"
-        "📲 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
-        "❤️  🔥  👍  😂  😢\n"
-        "💖 <b>እንወዳችኋለን!</b> ❤️"
+        + "━━━━━━━━━━━━━━\n"
+        + f"{branding['footer']}\n"
+        + "📲 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
+        + "❤️  🔥  👍  😂  😢\n"
+        + "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
 
 
