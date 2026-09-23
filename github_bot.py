@@ -2,6 +2,7 @@ import os
 import re
 import json
 import html
+import urllib.parse
 import urllib.request
 import urllib.error
 import asyncio
@@ -20,7 +21,6 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 USER_SESSION = os.environ["USER_SESSION"]
-
 
 # =========================================================
 # GITHUB ACTIONS SCHEDULE GROUP
@@ -114,10 +114,11 @@ SOURCE_CHANNELS = GENERAL_SOURCES + list(
     SOURCE_ROUTES.keys()
 )
 
-
 # =========================================================
 # SEPARATE 5-MINUTE SCHEDULE GROUPS
 # =========================================================
+# Each workflow schedule checks ONLY its own group.
+# This prevents all source channels from being checked at once.
 
 SCHEDULE_GROUPS = {
 
@@ -160,6 +161,8 @@ SCHEDULE_GROUPS = {
     ],
 
     # MAN UNITED — :05, :10, :15, ...
+    # This has the same minute pattern as General, but a different
+    # cron string, so GitHub Actions can identify the schedule group.
     "5,10,15,20,25,30,35,40,45,50,55,0 * * * *": [
         "@ManchesterUnited",
         "@Empire_MU",
@@ -565,7 +568,9 @@ def facebook_post_media(
             )
 
             content_type = "video/mp4"
+
             file_field = "source"
+
             text_field = "description"
 
         elif lower_name.endswith(
@@ -579,7 +584,9 @@ def facebook_post_media(
             )
 
             content_type = "video/quicktime"
+
             file_field = "source"
+
             text_field = "description"
 
         elif lower_name.endswith(
@@ -593,7 +600,9 @@ def facebook_post_media(
             )
 
             content_type = "video/x-m4v"
+
             file_field = "source"
+
             text_field = "description"
 
         elif lower_name.endswith(
@@ -607,7 +616,9 @@ def facebook_post_media(
             )
 
             content_type = "video/webm"
+
             file_field = "source"
+
             text_field = "description"
 
         # =================================================
@@ -628,7 +639,9 @@ def facebook_post_media(
             )
 
             content_type = "image/jpeg"
+
             file_field = "source"
+
             text_field = "caption"
 
         # =================================================
@@ -646,7 +659,9 @@ def facebook_post_media(
             )
 
             content_type = "image/png"
+
             file_field = "source"
+
             text_field = "caption"
 
         # =================================================
@@ -664,7 +679,9 @@ def facebook_post_media(
             )
 
             content_type = "image/gif"
+
             file_field = "source"
+
             text_field = "caption"
 
         # =================================================
@@ -682,7 +699,9 @@ def facebook_post_media(
             )
 
             content_type = "image/webp"
+
             file_field = "source"
+
             text_field = "caption"
 
         else:
@@ -919,564 +938,370 @@ def remove_links(text):
 
 
 # =========================================================
-# ETHIOPIAN DATE + TIME + SESSION
-# =========================================================
-
-def get_ethiopian_date_and_session():
-
-    # Ethiopia = UTC+3
-    ethiopia_timezone = timezone(
-        timedelta(hours=3)
-    )
-
-    now = datetime.now(
-        timezone.utc
-    ).astimezone(
-        ethiopia_timezone
-    )
-
-    # =====================================================
-    # GREGORIAN → JULIAN DAY NUMBER
-    # =====================================================
-
-    a = (14 - now.month) // 12
-
-    y = (
-        now.year
-        + 4800
-        - a
-    )
-
-    m = (
-        now.month
-        + 12 * a
-        - 3
-    )
-
-    jdn = (
-        now.day
-        + (153 * m + 2) // 5
-        + 365 * y
-        + y // 4
-        - y // 100
-        + y // 400
-        - 32045
-    )
-
-    # =====================================================
-    # ETHIOPIAN CALENDAR
-    # =====================================================
-
-    ETHIOPIAN_EPOCH = 1724221
-
-    days_since_epoch = (
-        jdn
-        - ETHIOPIAN_EPOCH
-    )
-
-    ethiopian_year = (
-        4 * days_since_epoch
-        + 1463
-    ) // 1461
-
-    # IMPORTANT:
-    # Use ethiopian_year // 4 here.
-    # This correctly handles Ethiopian leap years.
-
-    start_of_year = (
-        ETHIOPIAN_EPOCH
-        + 365 * (
-            ethiopian_year - 1
-        )
-        + ethiopian_year // 4
-    )
-
-    days_into_year = (
-        jdn
-        - start_of_year
-    )
-
-    ethiopian_month = (
-        days_into_year // 30
-    ) + 1
-
-    ethiopian_day = (
-        days_into_year % 30
-    ) + 1
-
-    # =====================================================
-    # ETHIOPIAN MONTH NAMES
-    # =====================================================
-
-    months = [
-        "መስከረም",
-        "ጥቅምት",
-        "ኅዳር",
-        "ታኅሣሥ",
-        "ጥር",
-        "የካቲት",
-        "መጋቢት",
-        "ሚያዝያ",
-        "ግንቦት",
-        "ሰኔ",
-        "ሐምሌ",
-        "ነሐሴ",
-        "ጳጉሜን"
-    ]
-
-    month_name = months[
-        ethiopian_month - 1
-    ]
-
-    eth_date = (
-        f"{ethiopian_day} "
-        f"{month_name} "
-        f"{ethiopian_year}"
-    )
-
-    # =====================================================
-    # SESSION
-    # =====================================================
-
-    hour = now.hour
-
-    if 5 <= hour < 11:
-
-        session = "ጠዋት"
-
-    elif 11 <= hour < 14:
-
-        session = "እኩለ ቀን"
-
-    elif 14 <= hour < 18:
-
-        session = "ከሰዓት"
-
-    elif 18 <= hour < 24:
-
-        session = "ማታ"
-
-    else:
-
-        session = "ሌሊት"
-
-    # =====================================================
-    # ETHIOPIAN CLOCK
-    # =====================================================
-    #
-    # Ethiopian clock starts at 6:00 AM.
-    #
-    # 06:00 → 12:00 Ethiopian clock
-    # 12:00 → 06:00 Ethiopian clock
-    # 18:00 → 12:00 Ethiopian clock
-    #
-    # =====================================================
-
-    ethiopian_clock_hour = (
-        (hour - 6) % 12
-    )
-
-    if ethiopian_clock_hour == 0:
-
-        ethiopian_clock_hour = 12
-
-    ethiopian_time = (
-        f"{ethiopian_clock_hour:02d}:"
-        f"{now.minute:02d}"
-    )
-
-    return (
-        eth_date,
-        session,
-        ethiopian_time
-    )
-
-
-# =========================================================
 # FOOTBALL TRANSLATION
-# ENGLISH → AMHARIC
+# FREE LOCAL NLLB ENGLISH → AMHARIC
 # =========================================================
+
+NLLB_MODEL_NAME = os.environ.get(
+    "NLLB_MODEL_NAME",
+    "dsfsi/nllb_200_distilled_600m-eng-amh"
+).strip()
+
+_nllb_tokenizer = None
+_nllb_model = None
+_nllb_device = None
+
+
+def load_nllb_model():
+    """Load the free English→Amharic NLLB model once per workflow run."""
+    global _nllb_tokenizer, _nllb_model, _nllb_device
+
+    if _nllb_model is not None and _nllb_tokenizer is not None:
+        return _nllb_tokenizer, _nllb_model, _nllb_device
+
+    try:
+        import torch
+        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+
+        # GitHub Actions normally runs on CPU.
+        _nllb_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        print("📦 Loading free NLLB Amharic translator...")
+        print("🤖 Model:", NLLB_MODEL_NAME)
+        print("💻 Device:", _nllb_device)
+
+        _nllb_tokenizer = AutoTokenizer.from_pretrained(
+            NLLB_MODEL_NAME
+        )
+
+        _nllb_model = AutoModelForSeq2SeqLM.from_pretrained(
+            NLLB_MODEL_NAME
+        )
+
+        _nllb_model.to(_nllb_device)
+        _nllb_model.eval()
+
+        print("✅ NLLB translator loaded")
+
+        return _nllb_tokenizer, _nllb_model, _nllb_device
+
+    except Exception as e:
+        print("❌ Could not load NLLB translator:", e)
+        _nllb_tokenizer = None
+        _nllb_model = None
+        _nllb_device = None
+        return None, None, None
+
+
+def convert_times_to_ethiopia(value):
+    """Convert explicit source time zones in news text to Ethiopia time."""
+    timezone_offsets = {
+        "UTC": 0,
+        "GMT": 0,
+        "EAT": 3,
+        "WAT": 1,
+        "CAT": 2,
+        "CET": 1,
+        "CEST": 2,
+        "BST": 1,
+        "IST": 5.5,
+    }
+
+    pattern = re.compile(
+        r'\b'
+        r'(\d{1,2})'
+        r'(?::(\d{2}))?'
+        r'\s*'
+        r'(AM|PM|am|pm)?'
+        r'\s*'
+        r'(UTC|GMT|EAT|WAT|CAT|CET|CEST|BST|IST)'
+        r'\b',
+        re.IGNORECASE
+    )
+
+    def replace_time(match):
+        hour = int(match.group(1))
+        minute = int(match.group(2)) if match.group(2) else 0
+        ampm = match.group(3)
+        zone = match.group(4).upper()
+
+        if ampm:
+            ampm = ampm.upper()
+            if ampm == "PM" and hour != 12:
+                hour += 12
+            elif ampm == "AM" and hour == 12:
+                hour = 0
+
+        source_offset = timezone_offsets.get(zone, 0)
+        total_minutes = (
+            hour * 60
+            + minute
+            + (3 - source_offset) * 60
+        )
+        total_minutes %= (24 * 60)
+
+        eth_hour = total_minutes // 60
+        eth_minute = total_minutes % 60
+
+        return f"{eth_hour:02d}:{eth_minute:02d} Ethiopia time"
+
+    return pattern.sub(replace_time, value)
+
+
+# Football names/terms that should remain recognizable after translation.
+# These are protected with private placeholders before NLLB translation.
+PROTECTED_FOOTBALL_TERMS = [
+    "Manchester United",
+    "Manchester City",
+    "Liverpool",
+    "Arsenal",
+    "Chelsea",
+    "Tottenham Hotspur",
+    "Newcastle United",
+    "Real Madrid",
+    "Barcelona",
+    "Bayern Munich",
+    "Paris Saint-Germain",
+    "PSG",
+    "Premier League",
+    "Champions League",
+    "Europa League",
+    "UEFA",
+    "FIFA",
+    "VAR",
+    "LFC",
+    "AFC",
+    "contract",
+    "transfer",
+    "deal",
+    "medical",
+    "loan",
+    "Assist",
+    "Fulltime",
+    "Here we go",
+    "Match Week",
+]
+
+
+def protect_football_terms(text):
+    protected = {}
+    result = text
+
+    # Longest first so compound names are protected before shorter terms.
+    terms = sorted(PROTECTED_FOOTBALL_TERMS, key=len, reverse=True)
+
+    counter = 0
+    for term in terms:
+        pattern = re.compile(re.escape(term), re.IGNORECASE)
+
+        def repl(match):
+            nonlocal counter
+            key = f"NLLBKEEPX{counter}X"
+            protected[key] = match.group(0)
+            counter += 1
+            return key
+
+        result = pattern.sub(repl, result)
+
+    return result, protected
+
+
+def restore_football_terms(text, protected):
+    result = text
+    for key, original in protected.items():
+        result = result.replace(key, original)
+    return result
+
+
+def split_for_translation(text, tokenizer, max_tokens=220):
+    """Split long football posts so the 600M model does not exceed its input limit."""
+    paragraphs = re.split(r"\n\s*\n", text.strip())
+    chunks = []
+    current = ""
+
+    for paragraph in paragraphs:
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+
+        candidate = paragraph if not current else current + "\n\n" + paragraph
+        token_count = len(
+            tokenizer(
+                candidate,
+                add_special_tokens=True,
+                truncation=False
+            )["input_ids"]
+        )
+
+        if token_count <= max_tokens:
+            current = candidate
+            continue
+
+        if current:
+            chunks.append(current)
+            current = ""
+
+        # A single paragraph can still be long; split it by sentences.
+        sentences = re.split(r"(?<=[.!?])\s+", paragraph)
+        sentence_buffer = ""
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+
+            candidate_sentence = (
+                sentence
+                if not sentence_buffer
+                else sentence_buffer + " " + sentence
+            )
+
+            count = len(
+                tokenizer(
+                    candidate_sentence,
+                    add_special_tokens=True,
+                    truncation=False
+                )["input_ids"]
+            )
+
+            if count <= max_tokens:
+                sentence_buffer = candidate_sentence
+            else:
+                if sentence_buffer:
+                    chunks.append(sentence_buffer)
+
+                # Extremely long single sentence: hard split by words.
+                words = sentence.split()
+                word_buffer = ""
+                for word in words:
+                    candidate_word = (
+                        word
+                        if not word_buffer
+                        else word_buffer + " " + word
+                    )
+                    count_word = len(
+                        tokenizer(
+                            candidate_word,
+                            add_special_tokens=True,
+                            truncation=False
+                        )["input_ids"]
+                    )
+                    if count_word <= max_tokens:
+                        word_buffer = candidate_word
+                    else:
+                        if word_buffer:
+                            chunks.append(word_buffer)
+                        word_buffer = word
+                sentence_buffer = word_buffer
+
+        if sentence_buffer:
+            chunks.append(sentence_buffer)
+
+    if current:
+        chunks.append(current)
+
+    return chunks or [text.strip()]
+
+
+def nllb_translate_chunk(text, tokenizer, model, device):
+    import torch
+
+    tokenizer.src_lang = "eng_Latn"
+
+    inputs = tokenizer(
+        text,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=256
+    )
+
+    inputs = {
+        key: value.to(device)
+        for key, value in inputs.items()
+    }
+
+    forced_bos_token_id = tokenizer.convert_tokens_to_ids(
+        "amh_Ethi"
+    )
+
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            forced_bos_token_id=forced_bos_token_id,
+            max_length=256,
+            num_beams=4,
+            early_stopping=True,
+            no_repeat_ngram_size=3,
+        )
+
+    return tokenizer.batch_decode(
+        outputs,
+        skip_special_tokens=True
+    )[0].strip()
+
 
 def translate_to_amharic(text):
-
     if not text:
         return ""
 
-    # =====================================================
-    # CONVERT TIMES TO ETHIOPIA TIME
-    # =====================================================
+    text = convert_times_to_ethiopia(text)
 
-    def convert_times_to_ethiopia(value):
+    tokenizer, model, device = load_nllb_model()
 
-        timezone_offsets = {
-            "UTC": 0,
-            "GMT": 0,
-            "EAT": 3,
-            "WAT": 1,
-            "CAT": 2,
-            "CET": 1,
-            "CEST": 2,
-            "BST": 1,
-            "IST": 5.5,
-        }
-
-        pattern = re.compile(
-            r'\b'
-            r'(\d{1,2})'
-            r'(?::(\d{2}))?'
-            r'\s*'
-            r'(AM|PM|am|pm)?'
-            r'\s*'
-            r'(UTC|GMT|EAT|WAT|CAT|CET|CEST|BST|IST)'
-            r'\b',
-            re.IGNORECASE
-        )
-
-        def replace_time(match):
-
-            hour = int(
-                match.group(1)
-            )
-
-            minute = (
-                int(match.group(2))
-                if match.group(2)
-                else 0
-            )
-
-            ampm = match.group(3)
-
-            zone = match.group(4).upper()
-
-            if ampm:
-
-                ampm = ampm.upper()
-
-                if (
-                    ampm == "PM"
-                    and hour != 12
-                ):
-
-                    hour += 12
-
-                elif (
-                    ampm == "AM"
-                    and hour == 12
-                ):
-
-                    hour = 0
-
-            source_offset = (
-                timezone_offsets.get(
-                    zone,
-                    0
-                )
-            )
-
-            total_minutes = (
-                hour * 60
-                + minute
-                + (
-                    3
-                    - source_offset
-                ) * 60
-            )
-
-            total_minutes %= (
-                24 * 60
-            )
-
-            eth_hour = (
-                total_minutes // 60
-            )
-
-            eth_minute = (
-                total_minutes % 60
-            )
-
-            return (
-                f"{eth_hour:02d}:"
-                f"{eth_minute:02d} "
-                f"Ethiopia time"
-            )
-
-        return pattern.sub(
-            replace_time,
-            value
-        )
-
-    text = convert_times_to_ethiopia(
-        text
-    )
-
-    # =====================================================
-    # OPENAI API
-    # =====================================================
-
-    api_key = os.environ.get(
-        "OPENAI_API_KEY",
-        ""
-    ).strip()
-
-    # -----------------------------------------------------
-    # NO API KEY
-    # -----------------------------------------------------
-
-    if not api_key:
-
-        print(
-            "⚠ OPENAI_API_KEY is missing."
-        )
-
-        print(
-            "⚠ Using original text."
-        )
-
+    if tokenizer is None or model is None:
+        print("⚠ NLLB unavailable - using original English text")
         return text.strip()
 
-    system_prompt = """
-You are the official Amharic football-news translator for an Ethiopian
-football Telegram channel.
-
-Translate English football news into NATURAL, CLEAR, PROFESSIONAL Ethiopian
-Amharic. Do not translate word-for-word when that produces unnatural Amharic.
-Understand the football context first, then write the meaning naturally.
-
-VERY IMPORTANT RULES:
-
-1. Translate the ENTIRE news text into Amharic. Do not leave the main news
-   paragraph in English.
-
-2. Preserve player names, club names, league names, abbreviations and official
-   names when appropriate. Examples:
-   Arsenal, Liverpool, Chelsea, Manchester City, Manchester United,
-   Mohamed Salah, Mikel Arteta, LFC, FIFA, UEFA.
-
-3. NEVER translate football abbreviations such as LFC into ordinary Amharic
-   words. "LFC" must remain exactly "LFC".
-
-4. Keep useful football terms in English when that is clearer and natural for
-   Ethiopian football readers:
-   contract, agreement, transfer, deal, medical, bid, loan, Assist,
-   Fulltime, Here we go, Match Week.
-
-5. Use context-aware Ethiopian football language.
-
-   For example:
-   - "backroom staff" / "back staff" in a football coaching context should
-     normally become "የቴክኒክ ቡድን አባላት" rather than a literal translation.
-   - "staff" can become "የሰራተኛ ቡድን" when the context is general staff.
-   - "according to LFC" should be naturally written as
-     "እንደ LFC ገለጻ".
-   - "an agreement has been reached" should be naturally written as
-     "ስምምነቱ ተደርሷል".
-   - "set to be officially announced" should be naturally written as
-     "በይፋ እንዲገለጽ በዝግጅት ላይ ይገኛል".
-
-6. Keep the original meaning, facts, names, numbers, dates and certainty.
-   Do NOT invent information, opinions or extra details.
-
-7. Do not summarize. Translate the complete news.
-
-8. Preserve emojis and useful symbols.
-
-9. If the source contains a quotation, translate the quotation naturally while
-   keeping the speaker's meaning.
-
-10. Do not add an introduction such as "Here is the translation".
-    Output ONLY the translated news text.
-
-11. Do not use Markdown headings or explanations unless they were already part
-    of the source.
-
-12. If a phrase is ambiguous, use the most likely football-news meaning rather
-    than translating it literally.
-
-13. Write in natural Ethiopian Amharic that ordinary Ethiopian football fans
-    can easily understand.
-
-14. Keep English proper names and football terms where translating them would
-    make the sentence less natural.
-
-15. Do not turn football abbreviations into unrelated words. For example,
-    LFC, AFC, UEFA, FIFA, VAR, FFP and similar abbreviations should remain
-    unchanged unless the source itself expands them.
-
-Return only the final Amharic translation.
-""".strip()
-
-    payload = {
-
-        "model": "gpt-5.6-luna",
-
-        "input": [
-
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-
-            {
-                "role": "user",
-                "content": text.strip()
-            }
-
-        ],
-
-        "max_output_tokens": 2500
-    }
+    protected_text, protected = protect_football_terms(text)
 
     try:
-
-        request_data = json.dumps(
-            payload,
-            ensure_ascii=False
-        ).encode("utf-8")
-
-        request = urllib.request.Request(
-
-            "https://api.openai.com/v1/responses",
-
-            data=request_data,
-
-            headers={
-                "Authorization":
-                    f"Bearer {api_key}",
-
-                "Content-Type":
-                    "application/json"
-            },
-
-            method="POST"
+        chunks = split_for_translation(
+            protected_text,
+            tokenizer,
+            max_tokens=220
         )
 
-        with urllib.request.urlopen(
-            request,
-            timeout=45
-        ) as response:
+        translated_chunks = []
 
-            raw_response = (
-                response
-                .read()
-                .decode("utf-8")
+        for index, chunk in enumerate(chunks, start=1):
+            print(
+                f"🔄 NLLB translating part {index}/{len(chunks)}..."
             )
 
-        data = json.loads(
-            raw_response
-        )
+            translated_chunk = nllb_translate_chunk(
+                chunk,
+                tokenizer,
+                model,
+                device
+            )
 
-        translated_parts = []
+            if translated_chunk:
+                translated_chunks.append(
+                    translated_chunk
+                )
+            else:
+                translated_chunks.append(chunk)
 
-        for output_item in data.get(
-            "output",
-            []
-        ):
-
-            for content_item in output_item.get(
-                "content",
-                []
-            ):
-
-                if (
-                    content_item.get("type")
-                    == "output_text"
-                ):
-
-                    value = content_item.get(
-                        "text",
-                        ""
-                    )
-
-                    if value:
-
-                        translated_parts.append(
-                            value
-                        )
-
-        translated = "\n".join(
-            translated_parts
+        translated = "\n\n".join(
+            translated_chunks
         ).strip()
 
+        translated = restore_football_terms(
+            translated,
+            protected
+        )
+
         if translated:
-
-            print(
-                "✅ AI AMHARIC TRANSLATION SUCCESS"
-            )
-
+            print("✅ FREE NLLB AMHARIC TRANSLATION SUCCESS")
             return translated
 
-        print(
-            "⚠ OpenAI returned no translation."
-        )
-
-        print(
-            "⚠ Using original text."
-        )
-
+        print("⚠ NLLB returned empty text - using original text")
         return text.strip()
-
-    # =====================================================
-    # OPENAI HTTP ERROR
-    # =====================================================
-
-    except urllib.error.HTTPError as e:
-
-        try:
-
-            error_body = (
-                e.read()
-                .decode("utf-8")
-            )
-
-        except Exception:
-
-            error_body = str(e)
-
-        print(
-            "❌ OpenAI API HTTP ERROR:",
-            e.code,
-            error_body[:500]
-        )
-
-        if e.code == 429:
-
-            print(
-                "⚠ OpenAI credits/quota exhausted."
-            )
-
-            print(
-                "⚠ Continuing with original text."
-            )
-
-        else:
-
-            print(
-                "⚠ OpenAI translation unavailable."
-            )
-
-            print(
-                "⚠ Continuing with original text."
-            )
-
-        # IMPORTANT:
-        # Do NOT fail the Telegram message.
-        return text.strip()
-
-    # =====================================================
-    # OTHER OPENAI ERROR
-    # =====================================================
 
     except Exception as e:
-
-        print(
-            "❌ OpenAI translation error:",
-            e
-        )
-
-        print(
-            "⚠ Continuing with original text."
-        )
-
+        print("❌ NLLB translation error:", e)
+        print("⚠ Using original English text for this post")
         return text.strip()
 
 
@@ -1484,17 +1309,13 @@ Return only the final Amharic translation.
 # CREATE FINAL POST
 # =========================================================
 
-def create_post(
-    text,
-    destination
-):
+def create_post(text, destination):
 
     text = remove_links(
         text
     )
 
     if not text:
-
         return ""
 
     translated = translate_to_amharic(
@@ -1502,7 +1323,6 @@ def create_post(
     )
 
     if not translated:
-
         translated = text
 
     translated = html.escape(
@@ -1522,12 +1342,10 @@ def create_post(
     channel_branding = {
 
         "@habeshasport": {
-
             "header": (
                 "⚽ <b>HABESHA SPORT | "
                 "አጭር የእግር ኳስ ዜና</b>"
             ),
-
             "footer": (
                 "📢 <b>Habesha Sport</b> | "
                 "ኢትዮ ስፖርት"
@@ -1535,12 +1353,10 @@ def create_post(
         },
 
         "@arsenaletgunners": {
-
             "header": (
                 "🔴⚪ <b>ARSENAL NEWS | "
                 "የአርሰናል ዜና</b>"
             ),
-
             "footer": (
                 "🔴⚪ <b>Arsenal Ethiopia</b> | "
                 "አርሰናል ኢትዮጵያ"
@@ -1548,12 +1364,10 @@ def create_post(
         },
 
         "@liverpoolethiop": {
-
             "header": (
                 "🔴 <b>LIVERPOOL NEWS | "
                 "የሊቨርፑል ዜና</b>"
             ),
-
             "footer": (
                 "🔴 <b>Liverpool Ethiopia</b> | "
                 "ሊቨርፑል ኢትዮጵያ"
@@ -1561,12 +1375,10 @@ def create_post(
         },
 
         "@mancitynewset": {
-
             "header": (
                 "🔵 <b>MAN CITY NEWS | "
                 "የማን ሲቲ ዜና</b>"
             ),
-
             "footer": (
                 "🔵 <b>Man City Ethiopia</b> | "
                 "ማን ሲቲ ኢትዮጵያ"
@@ -1574,12 +1386,10 @@ def create_post(
         },
 
         "@chelseafcet": {
-
             "header": (
                 "🔵 <b>CHELSEA NEWS | "
                 "የቼልሲ ዜና</b>"
             ),
-
             "footer": (
                 "🔵 <b>Chelsea Ethiopia</b> | "
                 "ቼልሲ ኢትዮጵያ"
@@ -1587,12 +1397,10 @@ def create_post(
         },
 
         "@manunitedethiopia": {
-
             "header": (
                 "🔴 <b>MAN UNITED NEWS | "
                 "የማን ዩናይትድ ዜና</b>"
             ),
-
             "footer": (
                 "🔴 <b>Man United Ethiopia</b> | "
                 "ማን ዩናይትድ ኢትዮጵያ"
@@ -1602,34 +1410,23 @@ def create_post(
 
     branding = channel_branding.get(
         destination,
-        channel_branding[
-            "@habeshasport"
-        ]
+        channel_branding["@habeshasport"]
     )
 
     return (
-
         f"📅 <b>{eth_date} | "
         f"{session}</b>\n"
-
         f"🕒 <b>{ethiopian_time}</b>\n"
-
         f"{branding['header']}\n\n"
-
         + translated
-
         + "\n\n"
-
         "━━━━━━━━━━━━━━\n"
-
         f"{branding['footer']}\n"
-
         "📲 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
-
         "❤️  🔥  👍  😂  😢\n"
-
         "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
+
 
 
 # =========================================================
@@ -1813,9 +1610,6 @@ async def process_message(
                 original_text[:300]
             )
 
-            # Blocked advertisements count as
-            # successfully processed so the state
-            # can move forward.
             return True, False
 
         print(
@@ -1986,7 +1780,6 @@ async def process_message(
                         )
 
                     except Exception:
-
                         pass
 
                     return True, True
@@ -2002,7 +1795,6 @@ async def process_message(
                     )
 
                 except Exception:
-
                     pass
 
                 print(
@@ -2397,14 +2189,12 @@ async def main():
 
         if BOT_SCHEDULE in SCHEDULE_GROUPS:
 
-            channels_to_check = (
-                SCHEDULE_GROUPS[
-                    BOT_SCHEDULE
-                ]
-            )
+            channels_to_check = SCHEDULE_GROUPS[
+                BOT_SCHEDULE
+            ]
 
             print(
-                "\n⏰ Triggered schedule:",
+                "\\n⏰ Triggered schedule:",
                 BOT_SCHEDULE
             )
 
@@ -2417,12 +2207,10 @@ async def main():
 
             # Manual workflow run:
             # check everything, as before.
-            channels_to_check = (
-                SOURCE_CHANNELS
-            )
+            channels_to_check = SOURCE_CHANNELS
 
             print(
-                "\n🖐 Manual workflow run"
+                "\\n🖐 Manual workflow run"
             )
 
             print(
