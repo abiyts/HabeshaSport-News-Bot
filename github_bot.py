@@ -2,7 +2,6 @@ import os
 import re
 import json
 import html
-import urllib.parse
 import urllib.request
 import urllib.error
 import asyncio
@@ -21,6 +20,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 USER_SESSION = os.environ["USER_SESSION"]
+
 
 # =========================================================
 # GITHUB ACTIONS SCHEDULE GROUP
@@ -114,11 +114,10 @@ SOURCE_CHANNELS = GENERAL_SOURCES + list(
     SOURCE_ROUTES.keys()
 )
 
+
 # =========================================================
 # SEPARATE 5-MINUTE SCHEDULE GROUPS
 # =========================================================
-# Each workflow schedule checks ONLY its own group.
-# This prevents all source channels from being checked at once.
 
 SCHEDULE_GROUPS = {
 
@@ -161,8 +160,6 @@ SCHEDULE_GROUPS = {
     ],
 
     # MAN UNITED — :05, :10, :15, ...
-    # This has the same minute pattern as General, but a different
-    # cron string, so GitHub Actions can identify the schedule group.
     "5,10,15,20,25,30,35,40,45,50,55,0 * * * *": [
         "@ManchesterUnited",
         "@Empire_MU",
@@ -568,9 +565,7 @@ def facebook_post_media(
             )
 
             content_type = "video/mp4"
-
             file_field = "source"
-
             text_field = "description"
 
         elif lower_name.endswith(
@@ -584,9 +579,7 @@ def facebook_post_media(
             )
 
             content_type = "video/quicktime"
-
             file_field = "source"
-
             text_field = "description"
 
         elif lower_name.endswith(
@@ -600,9 +593,7 @@ def facebook_post_media(
             )
 
             content_type = "video/x-m4v"
-
             file_field = "source"
-
             text_field = "description"
 
         elif lower_name.endswith(
@@ -616,9 +607,7 @@ def facebook_post_media(
             )
 
             content_type = "video/webm"
-
             file_field = "source"
-
             text_field = "description"
 
         # =================================================
@@ -639,9 +628,7 @@ def facebook_post_media(
             )
 
             content_type = "image/jpeg"
-
             file_field = "source"
-
             text_field = "caption"
 
         # =================================================
@@ -659,9 +646,7 @@ def facebook_post_media(
             )
 
             content_type = "image/png"
-
             file_field = "source"
-
             text_field = "caption"
 
         # =================================================
@@ -679,9 +664,7 @@ def facebook_post_media(
             )
 
             content_type = "image/gif"
-
             file_field = "source"
-
             text_field = "caption"
 
         # =================================================
@@ -699,9 +682,7 @@ def facebook_post_media(
             )
 
             content_type = "image/webp"
-
             file_field = "source"
-
             text_field = "caption"
 
         else:
@@ -938,9 +919,182 @@ def remove_links(text):
 
 
 # =========================================================
+# ETHIOPIAN DATE + TIME + SESSION
+# =========================================================
+
+def get_ethiopian_date_and_session():
+
+    # Ethiopia = UTC+3
+    ethiopia_timezone = timezone(
+        timedelta(hours=3)
+    )
+
+    now = datetime.now(
+        timezone.utc
+    ).astimezone(
+        ethiopia_timezone
+    )
+
+    # =====================================================
+    # GREGORIAN → JULIAN DAY NUMBER
+    # =====================================================
+
+    a = (14 - now.month) // 12
+
+    y = (
+        now.year
+        + 4800
+        - a
+    )
+
+    m = (
+        now.month
+        + 12 * a
+        - 3
+    )
+
+    jdn = (
+        now.day
+        + (153 * m + 2) // 5
+        + 365 * y
+        + y // 4
+        - y // 100
+        + y // 400
+        - 32045
+    )
+
+    # =====================================================
+    # ETHIOPIAN CALENDAR
+    # =====================================================
+
+    ETHIOPIAN_EPOCH = 1724221
+
+    days_since_epoch = (
+        jdn
+        - ETHIOPIAN_EPOCH
+    )
+
+    ethiopian_year = (
+        4 * days_since_epoch
+        + 1463
+    ) // 1461
+
+    # IMPORTANT:
+    # Use ethiopian_year // 4 here.
+    # This correctly handles Ethiopian leap years.
+
+    start_of_year = (
+        ETHIOPIAN_EPOCH
+        + 365 * (
+            ethiopian_year - 1
+        )
+        + ethiopian_year // 4
+    )
+
+    days_into_year = (
+        jdn
+        - start_of_year
+    )
+
+    ethiopian_month = (
+        days_into_year // 30
+    ) + 1
+
+    ethiopian_day = (
+        days_into_year % 30
+    ) + 1
+
+    # =====================================================
+    # ETHIOPIAN MONTH NAMES
+    # =====================================================
+
+    months = [
+        "መስከረም",
+        "ጥቅምት",
+        "ኅዳር",
+        "ታኅሣሥ",
+        "ጥር",
+        "የካቲት",
+        "መጋቢት",
+        "ሚያዝያ",
+        "ግንቦት",
+        "ሰኔ",
+        "ሐምሌ",
+        "ነሐሴ",
+        "ጳጉሜን"
+    ]
+
+    month_name = months[
+        ethiopian_month - 1
+    ]
+
+    eth_date = (
+        f"{ethiopian_day} "
+        f"{month_name} "
+        f"{ethiopian_year}"
+    )
+
+    # =====================================================
+    # SESSION
+    # =====================================================
+
+    hour = now.hour
+
+    if 5 <= hour < 11:
+
+        session = "ጠዋት"
+
+    elif 11 <= hour < 14:
+
+        session = "እኩለ ቀን"
+
+    elif 14 <= hour < 18:
+
+        session = "ከሰዓት"
+
+    elif 18 <= hour < 24:
+
+        session = "ማታ"
+
+    else:
+
+        session = "ሌሊት"
+
+    # =====================================================
+    # ETHIOPIAN CLOCK
+    # =====================================================
+    #
+    # Ethiopian clock starts at 6:00 AM.
+    #
+    # 06:00 → 12:00 Ethiopian clock
+    # 12:00 → 06:00 Ethiopian clock
+    # 18:00 → 12:00 Ethiopian clock
+    #
+    # =====================================================
+
+    ethiopian_clock_hour = (
+        (hour - 6) % 12
+    )
+
+    if ethiopian_clock_hour == 0:
+
+        ethiopian_clock_hour = 12
+
+    ethiopian_time = (
+        f"{ethiopian_clock_hour:02d}:"
+        f"{now.minute:02d}"
+    )
+
+    return (
+        eth_date,
+        session,
+        ethiopian_time
+    )
+
+
+# =========================================================
 # FOOTBALL TRANSLATION
 # ENGLISH → AMHARIC
-# + TIME ZONE CONVERSION → ETHIOPIA
 # =========================================================
 
 def translate_to_amharic(text):
@@ -980,7 +1134,10 @@ def translate_to_amharic(text):
 
         def replace_time(match):
 
-            hour = int(match.group(1))
+            hour = int(
+                match.group(1)
+            )
+
             minute = (
                 int(match.group(2))
                 if match.group(2)
@@ -992,29 +1149,50 @@ def translate_to_amharic(text):
             zone = match.group(4).upper()
 
             if ampm:
+
                 ampm = ampm.upper()
 
-                if ampm == "PM" and hour != 12:
+                if (
+                    ampm == "PM"
+                    and hour != 12
+                ):
+
                     hour += 12
 
-                elif ampm == "AM" and hour == 12:
+                elif (
+                    ampm == "AM"
+                    and hour == 12
+                ):
+
                     hour = 0
 
-            source_offset = timezone_offsets.get(
-                zone,
-                0
+            source_offset = (
+                timezone_offsets.get(
+                    zone,
+                    0
+                )
             )
 
             total_minutes = (
                 hour * 60
                 + minute
-                + (3 - source_offset) * 60
+                + (
+                    3
+                    - source_offset
+                ) * 60
             )
 
-            total_minutes %= (24 * 60)
+            total_minutes %= (
+                24 * 60
+            )
 
-            eth_hour = total_minutes // 60
-            eth_minute = total_minutes % 60
+            eth_hour = (
+                total_minutes // 60
+            )
+
+            eth_minute = (
+                total_minutes % 60
+            )
 
             return (
                 f"{eth_hour:02d}:"
@@ -1027,24 +1205,33 @@ def translate_to_amharic(text):
             value
         )
 
-    text = convert_times_to_ethiopia(text)
+    text = convert_times_to_ethiopia(
+        text
+    )
 
     # =====================================================
-    # OPENAI AI TRANSLATION
-    # =====================================================
-    #
-    # IMPORTANT:
-    # OPENAI_API_KEY is read from the GitHub Actions
-    # environment. It is NOT stored in this source code.
-    #
-    # The bot uses the OpenAI Responses API directly with
-    # urllib, so no "openai" Python package is required.
+    # OPENAI API
     # =====================================================
 
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    api_key = os.environ.get(
+        "OPENAI_API_KEY",
+        ""
+    ).strip()
+
+    # -----------------------------------------------------
+    # NO API KEY
+    # -----------------------------------------------------
 
     if not api_key:
-        print("⚠ OPENAI_API_KEY is missing - using original text")
+
+        print(
+            "⚠ OPENAI_API_KEY is missing."
+        )
+
+        print(
+            "⚠ Using original text."
+        )
+
         return text.strip()
 
     system_prompt = """
@@ -1074,6 +1261,7 @@ VERY IMPORTANT RULES:
    Fulltime, Here we go, Match Week.
 
 5. Use context-aware Ethiopian football language.
+
    For example:
    - "backroom staff" / "back staff" in a football coaching context should
      normally become "የቴክኒክ ቡድን አባላት" rather than a literal translation.
@@ -1118,17 +1306,23 @@ Return only the final Amharic translation.
 """.strip()
 
     payload = {
+
         "model": "gpt-5.6-luna",
+
         "input": [
+
             {
                 "role": "system",
                 "content": system_prompt
             },
+
             {
                 "role": "user",
                 "content": text.strip()
             }
+
         ],
+
         "max_output_tokens": 2500
     }
 
@@ -1140,12 +1334,19 @@ Return only the final Amharic translation.
         ).encode("utf-8")
 
         request = urllib.request.Request(
+
             "https://api.openai.com/v1/responses",
+
             data=request_data,
+
             headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
+                "Authorization":
+                    f"Bearer {api_key}",
+
+                "Content-Type":
+                    "application/json"
             },
+
             method="POST"
         )
 
@@ -1160,11 +1361,16 @@ Return only the final Amharic translation.
                 .decode("utf-8")
             )
 
-        data = json.loads(raw_response)
+        data = json.loads(
+            raw_response
+        )
 
         translated_parts = []
 
-        for output_item in data.get("output", []):
+        for output_item in data.get(
+            "output",
+            []
+        ):
 
             for content_item in output_item.get(
                 "content",
@@ -1182,6 +1388,7 @@ Return only the final Amharic translation.
                     )
 
                     if value:
+
                         translated_parts.append(
                             value
                         )
@@ -1192,25 +1399,37 @@ Return only the final Amharic translation.
 
         if translated:
 
-            print("✅ AI AMHARIC TRANSLATION SUCCESS")
+            print(
+                "✅ AI AMHARIC TRANSLATION SUCCESS"
+            )
 
             return translated
 
         print(
-            "⚠ OpenAI returned no translation - "
-            "using original text"
+            "⚠ OpenAI returned no translation."
+        )
+
+        print(
+            "⚠ Using original text."
         )
 
         return text.strip()
 
+    # =====================================================
+    # OPENAI HTTP ERROR
+    # =====================================================
+
     except urllib.error.HTTPError as e:
 
         try:
+
             error_body = (
                 e.read()
                 .decode("utf-8")
             )
+
         except Exception:
+
             error_body = str(e)
 
         print(
@@ -1219,7 +1438,33 @@ Return only the final Amharic translation.
             error_body[:500]
         )
 
+        if e.code == 429:
+
+            print(
+                "⚠ OpenAI credits/quota exhausted."
+            )
+
+            print(
+                "⚠ Continuing with original text."
+            )
+
+        else:
+
+            print(
+                "⚠ OpenAI translation unavailable."
+            )
+
+            print(
+                "⚠ Continuing with original text."
+            )
+
+        # IMPORTANT:
+        # Do NOT fail the Telegram message.
         return text.strip()
+
+    # =====================================================
+    # OTHER OPENAI ERROR
+    # =====================================================
 
     except Exception as e:
 
@@ -1228,19 +1473,28 @@ Return only the final Amharic translation.
             e
         )
 
+        print(
+            "⚠ Continuing with original text."
+        )
+
         return text.strip()
+
 
 # =========================================================
 # CREATE FINAL POST
 # =========================================================
 
-def create_post(text, destination):
+def create_post(
+    text,
+    destination
+):
 
     text = remove_links(
         text
     )
 
     if not text:
+
         return ""
 
     translated = translate_to_amharic(
@@ -1248,6 +1502,7 @@ def create_post(text, destination):
     )
 
     if not translated:
+
         translated = text
 
     translated = html.escape(
@@ -1267,10 +1522,12 @@ def create_post(text, destination):
     channel_branding = {
 
         "@habeshasport": {
+
             "header": (
                 "⚽ <b>HABESHA SPORT | "
                 "አጭር የእግር ኳስ ዜና</b>"
             ),
+
             "footer": (
                 "📢 <b>Habesha Sport</b> | "
                 "ኢትዮ ስፖርት"
@@ -1278,10 +1535,12 @@ def create_post(text, destination):
         },
 
         "@arsenaletgunners": {
+
             "header": (
                 "🔴⚪ <b>ARSENAL NEWS | "
                 "የአርሰናል ዜና</b>"
             ),
+
             "footer": (
                 "🔴⚪ <b>Arsenal Ethiopia</b> | "
                 "አርሰናል ኢትዮጵያ"
@@ -1289,10 +1548,12 @@ def create_post(text, destination):
         },
 
         "@liverpoolethiop": {
+
             "header": (
                 "🔴 <b>LIVERPOOL NEWS | "
                 "የሊቨርፑል ዜና</b>"
             ),
+
             "footer": (
                 "🔴 <b>Liverpool Ethiopia</b> | "
                 "ሊቨርፑል ኢትዮጵያ"
@@ -1300,10 +1561,12 @@ def create_post(text, destination):
         },
 
         "@mancitynewset": {
+
             "header": (
                 "🔵 <b>MAN CITY NEWS | "
                 "የማን ሲቲ ዜና</b>"
             ),
+
             "footer": (
                 "🔵 <b>Man City Ethiopia</b> | "
                 "ማን ሲቲ ኢትዮጵያ"
@@ -1311,10 +1574,12 @@ def create_post(text, destination):
         },
 
         "@chelseafcet": {
+
             "header": (
                 "🔵 <b>CHELSEA NEWS | "
                 "የቼልሲ ዜና</b>"
             ),
+
             "footer": (
                 "🔵 <b>Chelsea Ethiopia</b> | "
                 "ቼልሲ ኢትዮጵያ"
@@ -1322,10 +1587,12 @@ def create_post(text, destination):
         },
 
         "@manunitedethiopia": {
+
             "header": (
                 "🔴 <b>MAN UNITED NEWS | "
                 "የማን ዩናይትድ ዜና</b>"
             ),
+
             "footer": (
                 "🔴 <b>Man United Ethiopia</b> | "
                 "ማን ዩናይትድ ኢትዮጵያ"
@@ -1335,23 +1602,34 @@ def create_post(text, destination):
 
     branding = channel_branding.get(
         destination,
-        channel_branding["@habeshasport"]
+        channel_branding[
+            "@habeshasport"
+        ]
     )
 
     return (
+
         f"📅 <b>{eth_date} | "
         f"{session}</b>\n"
+
         f"🕒 <b>{ethiopian_time}</b>\n"
+
         f"{branding['header']}\n\n"
+
         + translated
+
         + "\n\n"
+
         "━━━━━━━━━━━━━━\n"
+
         f"{branding['footer']}\n"
+
         "📲 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
+
         "❤️  🔥  👍  😂  😢\n"
+
         "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
-
 
 
 # =========================================================
@@ -1535,6 +1813,9 @@ async def process_message(
                 original_text[:300]
             )
 
+            # Blocked advertisements count as
+            # successfully processed so the state
+            # can move forward.
             return True, False
 
         print(
@@ -1705,6 +1986,7 @@ async def process_message(
                         )
 
                     except Exception:
+
                         pass
 
                     return True, True
@@ -1720,6 +2002,7 @@ async def process_message(
                     )
 
                 except Exception:
+
                     pass
 
                 print(
@@ -2114,12 +2397,14 @@ async def main():
 
         if BOT_SCHEDULE in SCHEDULE_GROUPS:
 
-            channels_to_check = SCHEDULE_GROUPS[
-                BOT_SCHEDULE
-            ]
+            channels_to_check = (
+                SCHEDULE_GROUPS[
+                    BOT_SCHEDULE
+                ]
+            )
 
             print(
-                "\\n⏰ Triggered schedule:",
+                "\n⏰ Triggered schedule:",
                 BOT_SCHEDULE
             )
 
@@ -2132,10 +2417,12 @@ async def main():
 
             # Manual workflow run:
             # check everything, as before.
-            channels_to_check = SOURCE_CHANNELS
+            channels_to_check = (
+                SOURCE_CHANNELS
+            )
 
             print(
-                "\\n🖐 Manual workflow run"
+                "\n🖐 Manual workflow run"
             )
 
             print(
