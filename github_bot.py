@@ -1306,6 +1306,104 @@ def translate_to_amharic(text):
 
 
 # =========================================================
+# ETHIOPIAN CALENDAR DATE + ETHIOPIAN CLOCK
+# =========================================================
+
+def get_ethiopian_date_and_session():
+
+    utc_now = datetime.now(timezone.utc)
+
+    ethiopia_now = (
+        utc_now + timedelta(hours=3)
+    )
+
+    now = ethiopia_now.replace(tzinfo=None)
+
+    year = now.year
+
+    new_year_day = (
+        12
+        if (year + 1) % 4 == 0
+        else 11
+    )
+
+    new_year = datetime(
+        year,
+        9,
+        new_year_day
+    )
+
+    if now < new_year:
+
+        eth_year = year - 9
+
+        previous_gregorian_year = year - 1
+
+        previous_new_year_day = (
+            12
+            if year % 4 == 0
+            else 11
+        )
+
+        new_year = datetime(
+            previous_gregorian_year,
+            9,
+            previous_new_year_day
+        )
+
+    else:
+        eth_year = year - 8
+
+    days = (now - new_year).days
+
+    eth_month = (days // 30) + 1
+    eth_day = (days % 30) + 1
+
+    months = {
+        1: "መስከረም",
+        2: "ጥቅምት",
+        3: "ኅዳር",
+        4: "ታኅሣሥ",
+        5: "ጥር",
+        6: "የካቲት",
+        7: "መጋቢት",
+        8: "ሚያዝያ",
+        9: "ግንቦት",
+        10: "ሰኔ",
+        11: "ሐምሌ",
+        12: "ነሐሴ",
+        13: "ጳጉሜን"
+    }
+
+    if 6 <= now.hour < 12:
+        session = "ጠዋት | Morning"
+    elif 12 <= now.hour < 14:
+        session = "እኩለ ቀን | Midday"
+    elif 14 <= now.hour < 18:
+        session = "ከሰዓት | Afternoon"
+    elif 18 <= now.hour < 21:
+        session = "ማታ | Evening"
+    else:
+        session = "ሌሊት | Night"
+
+    ethiopian_hour = (now.hour - 6) % 12
+
+    if ethiopian_hour == 0:
+        ethiopian_hour = 12
+
+    time_text = (
+        f"{ethiopian_hour:02d}:"
+        f"{now.minute:02d}"
+    )
+
+    return (
+        f"{months[eth_month]} {eth_day}, {eth_year}",
+        session,
+        time_text
+    )
+
+
+# =========================================================
 # CREATE FINAL POST
 # =========================================================
 
