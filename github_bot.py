@@ -1479,7 +1479,7 @@ def get_ethiopian_date_and_session():
 # CREATE FINAL POST
 # =========================================================
 
-def create_post(text):
+def create_post(text, destination):
 
     text = remove_links(
         text
@@ -1493,7 +1493,6 @@ def create_post(text):
     )
 
     if not translated:
-
         translated = text
 
     translated = html.escape(
@@ -1506,20 +1505,98 @@ def create_post(text):
         ethiopian_time
     ) = get_ethiopian_date_and_session()
 
+    # =====================================================
+    # CHANNEL-SPECIFIC BRANDING
+    # =====================================================
+
+    channel_branding = {
+
+        "@habeshasport": {
+            "header": (
+                "⚽ <b>HABESHA SPORT | "
+                "አጭር የእግር ኳስ ዜና</b>"
+            ),
+            "footer": (
+                "📢 <b>Habesha Sport</b> | "
+                "ኢትዮ ስፖርት"
+            )
+        },
+
+        "@arsenaletgunners": {
+            "header": (
+                "🔴⚪ <b>ARSENAL NEWS | "
+                "የአርሰናል ዜና</b>"
+            ),
+            "footer": (
+                "🔴⚪ <b>Arsenal Ethiopia</b> | "
+                "አርሰናል ኢትዮጵያ"
+            )
+        },
+
+        "@liverpoolethiop": {
+            "header": (
+                "🔴 <b>LIVERPOOL NEWS | "
+                "የሊቨርፑል ዜና</b>"
+            ),
+            "footer": (
+                "🔴 <b>Liverpool Ethiopia</b> | "
+                "ሊቨርፑል ኢትዮጵያ"
+            )
+        },
+
+        "@mancitynewset": {
+            "header": (
+                "🔵 <b>MAN CITY NEWS | "
+                "የማን ሲቲ ዜና</b>"
+            ),
+            "footer": (
+                "🔵 <b>Man City Ethiopia</b> | "
+                "ማን ሲቲ ኢትዮጵያ"
+            )
+        },
+
+        "@chelseafcet": {
+            "header": (
+                "🔵 <b>CHELSEA NEWS | "
+                "የቼልሲ ዜና</b>"
+            ),
+            "footer": (
+                "🔵 <b>Chelsea Ethiopia</b> | "
+                "ቼልሲ ኢትዮጵያ"
+            )
+        },
+
+        "@manunitedethiopia": {
+            "header": (
+                "🔴 <b>MAN UNITED NEWS | "
+                "የማን ዩናይትድ ዜና</b>"
+            ),
+            "footer": (
+                "🔴 <b>Man United Ethiopia</b> | "
+                "ማን ዩናይትድ ኢትዮጵያ"
+            )
+        }
+    }
+
+    branding = channel_branding.get(
+        destination,
+        channel_branding["@habeshasport"]
+    )
+
     return (
         f"📅 <b>{eth_date} | "
         f"{session}</b>\n"
         f"🕒 <b>{ethiopian_time}</b>\n"
-        "⚽ <b>አጭር የስፖርት ዜና "
-        "ለቤተሰቦቻችን</b>\n\n"
+        f"{branding['header']}\n\n"
         + translated
         + "\n\n"
         "━━━━━━━━━━━━━━\n"
-        "📢 <b>ሼር ያድርጉ፣ "
-        "Like አትርሱ —❤️</b>\n"
+        f"{branding['footer']}\n"
+        "📲 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
         "❤️  🔥  👍  😂  😢\n"
         "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
+
 
 
 # =========================================================
@@ -1737,7 +1814,8 @@ async def process_message(
         )
 
         post = create_post(
-            original_text
+            original_text,
+            destination
         )
 
         show_buttons = (
