@@ -22,6 +22,7 @@ API_HASH = os.environ["API_HASH"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 USER_SESSION = os.environ["USER_SESSION"]
 
+
 # =========================================================
 # GITHUB ACTIONS SCHEDULE GROUP
 # =========================================================
@@ -45,10 +46,7 @@ DEFAULT_DESTINATION = "@habeshasport"
 
 SOURCE_ROUTES = {
 
-    # -------------------------
     # ARSENAL
-    # -------------------------
-
     "@arsenal_london": "@arsenaletgunners",
     "@Arsenalc": "@arsenaletgunners",
     "@gunnersfooty": "@arsenaletgunners",
@@ -56,35 +54,23 @@ SOURCE_ROUTES = {
     "@ZENA_ARSENAL": "@arsenaletgunners",
     "@ETHIO_ARSENAL": "@arsenaletgunners",
 
-    # -------------------------
     # LIVERPOOL
-    # -------------------------
-
     "@LiverpoolFCNews": "@liverpoolethiop",
     "@liverpool": "@liverpoolethiop",
     "@lfconline": "@liverpoolethiop",
 
-    # -------------------------
     # MAN CITY
-    # -------------------------
-
     "@Manchester_City": "@mancitynewset",
     "@manchester_city_cf": "@mancitynewset",
     "@mancity247": "@mancitynewset",
 
-    # -------------------------
     # CHELSEA
-    # -------------------------
-
     "@Chelsea_fc_worldwide": "@chelseafcet",
     "@chelseafcnews01": "@chelseafcet",
     "@chelseaanalysis": "@chelseafcet",
     "@chelseasunsport": "@chelseafcet",
 
-    # -------------------------
     # MAN UNITED
-    # -------------------------
-
     "@ManchesterUnited": "@manunitedethiopia",
     "@Empire_MU": "@manunitedethiopia",
     "@manchester_united_uk": "@manunitedethiopia",
@@ -95,14 +81,12 @@ SOURCE_ROUTES = {
 
 
 # =========================================================
-# GENERAL FOOTBALL SOURCES → HABESHA SPORT
+# GENERAL FOOTBALL SOURCES
 # =========================================================
 
 GENERAL_SOURCES = [
-
     "@sky_sports_world",
     "@Espnfc_news",
-
 ]
 
 
@@ -114,21 +98,20 @@ SOURCE_CHANNELS = GENERAL_SOURCES + list(
     SOURCE_ROUTES.keys()
 )
 
+
 # =========================================================
 # SEPARATE 5-MINUTE SCHEDULE GROUPS
 # =========================================================
-# Each workflow schedule checks ONLY its own group.
-# This prevents all source channels from being checked at once.
 
 SCHEDULE_GROUPS = {
 
-    # GENERAL — :00, :05, :10, ...
+    # GENERAL
     "0,5,10,15,20,25,30,35,40,45,50,55 * * * *": [
         "@sky_sports_world",
         "@Espnfc_news",
     ],
 
-    # ARSENAL — :01, :06, :11, ...
+    # ARSENAL
     "1,6,11,16,21,26,31,36,41,46,51,56 * * * *": [
         "@arsenal_london",
         "@Arsenalc",
@@ -138,21 +121,21 @@ SCHEDULE_GROUPS = {
         "@ETHIO_ARSENAL",
     ],
 
-    # LIVERPOOL — :02, :07, :12, ...
+    # LIVERPOOL
     "2,7,12,17,22,27,32,37,42,47,52,57 * * * *": [
         "@LiverpoolFCNews",
         "@liverpool",
         "@lfconline",
     ],
 
-    # MAN CITY — :03, :08, :13, ...
+    # MAN CITY
     "3,8,13,18,23,28,33,38,43,48,53,58 * * * *": [
         "@Manchester_City",
         "@manchester_city_cf",
         "@mancity247",
     ],
 
-    # CHELSEA — :04, :09, :14, ...
+    # CHELSEA
     "4,9,14,19,24,29,34,39,44,49,54,59 * * * *": [
         "@Chelsea_fc_worldwide",
         "@chelseafcnews01",
@@ -160,9 +143,7 @@ SCHEDULE_GROUPS = {
         "@chelseasunsport",
     ],
 
-    # MAN UNITED — :05, :10, :15, ...
-    # This has the same minute pattern as General, but a different
-    # cron string, so GitHub Actions can identify the schedule group.
+    # MAN UNITED
     "5,10,15,20,25,30,35,40,45,50,55,0 * * * *": [
         "@ManchesterUnited",
         "@Empire_MU",
@@ -202,9 +183,7 @@ FACEBOOK_DESTINATIONS = {
 
 def facebook_config(destination):
 
-    config = FACEBOOK_DESTINATIONS.get(
-        destination
-    )
+    config = FACEBOOK_DESTINATIONS.get(destination)
 
     if not config:
         return None
@@ -247,9 +226,7 @@ def facebook_plain_text(post):
         post
     )
 
-    text = html.unescape(
-        text
-    )
+    text = html.unescape(text)
 
     return text.strip()
 
@@ -271,10 +248,6 @@ def facebook_request(
 
     body = bytearray()
 
-    # -----------------------------------------------------
-    # TEXT FIELDS
-    # -----------------------------------------------------
-
     for key, value in fields.items():
 
         body.extend(
@@ -289,26 +262,16 @@ def facebook_request(
         )
 
         body.extend(
-            str(value).encode(
-                "utf-8"
-            )
+            str(value).encode("utf-8")
         )
 
-        body.extend(
-            b"\r\n"
-        )
-
-    # -----------------------------------------------------
-    # FILE FIELDS
-    # -----------------------------------------------------
+        body.extend(b"\r\n")
 
     if files:
 
         for key, file_info in files.items():
 
-            filename, content_type, data = (
-                file_info
-            )
+            filename, content_type, data = file_info
 
             body.extend(
                 f"--{boundary}\r\n".encode()
@@ -329,13 +292,8 @@ def facebook_request(
                 ).encode()
             )
 
-            body.extend(
-                data
-            )
-
-            body.extend(
-                b"\r\n"
-            )
+            body.extend(data)
+            body.extend(b"\r\n")
 
     body.extend(
         f"--{boundary}--\r\n".encode()
@@ -365,21 +323,13 @@ def facebook_request(
                 .decode("utf-8")
             )
 
-            return json.loads(
-                response_data
-            )
+            return json.loads(response_data)
 
     except urllib.error.HTTPError as e:
 
         print("")
-        print(
-            "❌ FACEBOOK GRAPH API ERROR"
-        )
-
-        print(
-            "HTTP STATUS:",
-            e.code
-        )
+        print("❌ FACEBOOK GRAPH API ERROR")
+        print("HTTP STATUS:", e.code)
 
         try:
 
@@ -388,25 +338,17 @@ def facebook_request(
                 .decode("utf-8")
             )
 
-            print(
-                "RESPONSE:"
-            )
-
-            print(
-                error_body
-            )
+            print("RESPONSE:")
+            print(error_body)
 
         except Exception as read_error:
 
             print(
-                "Could not read "
-                "Facebook error:",
+                "Could not read Facebook error:",
                 read_error
             )
 
-        print(
-            "END FACEBOOK ERROR"
-        )
+        print("END FACEBOOK ERROR")
 
         return {
             "error": {
@@ -418,10 +360,7 @@ def facebook_request(
 
         print("")
         print(
-            "❌ FACEBOOK CONNECTION ERROR:"
-        )
-
-        print(
+            "❌ FACEBOOK CONNECTION ERROR:",
             e
         )
 
@@ -435,10 +374,7 @@ def facebook_request(
 
         print("")
         print(
-            "❌ FACEBOOK REQUEST ERROR:"
-        )
-
-        print(
+            "❌ FACEBOOK REQUEST ERROR:",
             e
         )
 
@@ -458,18 +394,14 @@ def facebook_post_text(
     post
 ):
 
-    config = facebook_config(
-        destination
-    )
+    config = facebook_config(destination)
 
     if not config:
         return False
 
     page_config, page_id, token = config
 
-    message = facebook_plain_text(
-        post
-    )
+    message = facebook_plain_text(post)
 
     if not message:
         return False
@@ -500,10 +432,7 @@ def facebook_post_text(
             return True
 
         print(
-            "⚠ Facebook text returned:"
-        )
-
-        print(
+            "⚠ Facebook text returned:",
             result
         )
 
@@ -529,9 +458,7 @@ def facebook_post_media(
     post
 ):
 
-    config = facebook_config(
-        destination
-    )
+    config = facebook_config(destination)
 
     if not config:
         return False
@@ -540,26 +467,13 @@ def facebook_post_media(
 
     try:
 
-        with open(
-            media_path,
-            "rb"
-        ) as f:
-
+        with open(media_path, "rb") as f:
             data = f.read()
 
-        filename = os.path.basename(
-            media_path
-        )
-
+        filename = os.path.basename(media_path)
         lower_name = filename.lower()
 
-        # =================================================
-        # VIDEO
-        # =================================================
-
-        if lower_name.endswith(
-            ".mp4"
-        ):
+        if lower_name.endswith(".mp4"):
 
             endpoint = (
                 f"https://graph.facebook.com/"
@@ -568,14 +482,10 @@ def facebook_post_media(
             )
 
             content_type = "video/mp4"
-
             file_field = "source"
-
             text_field = "description"
 
-        elif lower_name.endswith(
-            ".mov"
-        ):
+        elif lower_name.endswith(".mov"):
 
             endpoint = (
                 f"https://graph.facebook.com/"
@@ -584,14 +494,10 @@ def facebook_post_media(
             )
 
             content_type = "video/quicktime"
-
             file_field = "source"
-
             text_field = "description"
 
-        elif lower_name.endswith(
-            ".m4v"
-        ):
+        elif lower_name.endswith(".m4v"):
 
             endpoint = (
                 f"https://graph.facebook.com/"
@@ -600,14 +506,10 @@ def facebook_post_media(
             )
 
             content_type = "video/x-m4v"
-
             file_field = "source"
-
             text_field = "description"
 
-        elif lower_name.endswith(
-            ".webm"
-        ):
+        elif lower_name.endswith(".webm"):
 
             endpoint = (
                 f"https://graph.facebook.com/"
@@ -616,20 +518,11 @@ def facebook_post_media(
             )
 
             content_type = "video/webm"
-
             file_field = "source"
-
             text_field = "description"
 
-        # =================================================
-        # JPG / JPEG
-        # =================================================
-
         elif lower_name.endswith(
-            (
-                ".jpg",
-                ".jpeg"
-            )
+            (".jpg", ".jpeg")
         ):
 
             endpoint = (
@@ -639,18 +532,10 @@ def facebook_post_media(
             )
 
             content_type = "image/jpeg"
-
             file_field = "source"
-
             text_field = "caption"
 
-        # =================================================
-        # PNG
-        # =================================================
-
-        elif lower_name.endswith(
-            ".png"
-        ):
+        elif lower_name.endswith(".png"):
 
             endpoint = (
                 f"https://graph.facebook.com/"
@@ -659,18 +544,10 @@ def facebook_post_media(
             )
 
             content_type = "image/png"
-
             file_field = "source"
-
             text_field = "caption"
 
-        # =================================================
-        # GIF
-        # =================================================
-
-        elif lower_name.endswith(
-            ".gif"
-        ):
+        elif lower_name.endswith(".gif"):
 
             endpoint = (
                 f"https://graph.facebook.com/"
@@ -679,18 +556,10 @@ def facebook_post_media(
             )
 
             content_type = "image/gif"
-
             file_field = "source"
-
             text_field = "caption"
 
-        # =================================================
-        # WEBP
-        # =================================================
-
-        elif lower_name.endswith(
-            ".webp"
-        ):
+        elif lower_name.endswith(".webp"):
 
             endpoint = (
                 f"https://graph.facebook.com/"
@@ -699,24 +568,19 @@ def facebook_post_media(
             )
 
             content_type = "image/webp"
-
             file_field = "source"
-
             text_field = "caption"
 
         else:
 
             print(
-                "ℹ Facebook media type "
-                "not supported:",
+                "ℹ Facebook media type not supported:",
                 filename
             )
 
             return False
 
-        caption = facebook_plain_text(
-            post
-        )
+        caption = facebook_plain_text(post)
 
         fields = {
             "access_token": token,
@@ -724,24 +588,13 @@ def facebook_post_media(
             text_field: caption,
         }
 
-        print(
-            "📘 Sending media to Facebook..."
-        )
-
+        print("📘 Sending media to Facebook...")
         print(
             "Facebook destination:",
             page_config["name"]
         )
-
-        print(
-            "File:",
-            filename
-        )
-
-        print(
-            "Content-Type:",
-            content_type
-        )
+        print("File:", filename)
+        print("Content-Type:", content_type)
 
         result = facebook_request(
             endpoint,
@@ -768,10 +621,7 @@ def facebook_post_media(
             return True
 
         print(
-            "⚠ Facebook media returned:"
-        )
-
-        print(
+            "⚠ Facebook media returned:",
             result
         )
 
@@ -800,7 +650,6 @@ PUSH_BUTTONS = [
             "Man City ሲቲ",
             "https://t.me/mancitynewset"
         ),
-
         Button.url(
             "Liverpool ሊቨርፑል",
             "https://t.me/liverpoolethiop"
@@ -812,7 +661,6 @@ PUSH_BUTTONS = [
             "Arsenal አርሰናል",
             "https://t.me/arsenaletgunners"
         ),
-
         Button.url(
             "Man United Ethiopia",
             "https://t.me/manunitedethiopia"
@@ -824,7 +672,6 @@ PUSH_BUTTONS = [
             "Chelsea ቼልሲ",
             "https://t.me/chelseafcet"
         ),
-
         Button.url(
             "Ethio Sport",
             "https://t.me/habeshasport"
@@ -842,10 +689,7 @@ STATE_FILE = "state.json"
 
 def load_state():
 
-    if not os.path.exists(
-        STATE_FILE
-    ):
-
+    if not os.path.exists(STATE_FILE):
         return {}
 
     try:
@@ -885,9 +729,7 @@ def save_state(state):
                 ensure_ascii=False
             )
 
-        print(
-            "💾 State saved"
-        )
+        print("💾 State saved")
 
     except Exception as e:
 
@@ -906,28 +748,24 @@ def remove_links(text):
     if not text:
         return ""
 
-    # Normal URLs
     text = re.sub(
         r'https?://\S+',
         '',
         text
     )
 
-    # Telegram URLs
     text = re.sub(
         r'(https?://)?t\.me/\S+',
         '',
         text
     )
 
-    # @handles
     text = re.sub(
         r'(?<!\w)@[A-Za-z0-9_]{3,}',
         '',
         text
     )
 
-    # Extra spaces
     text = re.sub(
         r'\n\s*\n\s*\n+',
         '\n\n',
@@ -939,7 +777,14 @@ def remove_links(text):
 
 # =========================================================
 # FOOTBALL TRANSLATION
-# FREE LOCAL NLLB ENGLISH → AMHARIC
+# FREE LOCAL NLLB 600M
+#
+# IMPORTANT:
+# We DO NOT use fake placeholders such as:
+# NLLBKEEPX0X
+#
+# Football terms are kept OUTSIDE NLLB and restored
+# naturally after the translated parts are generated.
 # =========================================================
 
 NLLB_MODEL_NAME = os.environ.get(
@@ -952,49 +797,105 @@ _nllb_model = None
 _nllb_device = None
 
 
-def load_nllb_model():
-    """Load the free English→Amharic NLLB model once per workflow run."""
-    global _nllb_tokenizer, _nllb_model, _nllb_device
+# =========================================================
+# LOAD NLLB
+# =========================================================
 
-    if _nllb_model is not None and _nllb_tokenizer is not None:
-        return _nllb_tokenizer, _nllb_model, _nllb_device
+def load_nllb_model():
+
+    global _nllb_tokenizer
+    global _nllb_model
+    global _nllb_device
+
+    if (
+        _nllb_model is not None
+        and _nllb_tokenizer is not None
+    ):
+        return (
+            _nllb_tokenizer,
+            _nllb_model,
+            _nllb_device
+        )
 
     try:
+
         import torch
-        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-        # GitHub Actions normally runs on CPU.
-        _nllb_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        from transformers import (
+            AutoTokenizer,
+            AutoModelForSeq2SeqLM
+        )
 
-        print("📦 Loading free NLLB Amharic translator...")
-        print("🤖 Model:", NLLB_MODEL_NAME)
-        print("💻 Device:", _nllb_device)
+        _nllb_device = torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else "cpu"
+        )
 
-        _nllb_tokenizer = AutoTokenizer.from_pretrained(
+        print("")
+        print(
+            "📦 Loading free NLLB 600M "
+            "English → Amharic translator..."
+        )
+
+        print(
+            "🤖 Model:",
             NLLB_MODEL_NAME
         )
 
-        _nllb_model = AutoModelForSeq2SeqLM.from_pretrained(
-            NLLB_MODEL_NAME
+        print(
+            "💻 Device:",
+            _nllb_device
         )
 
-        _nllb_model.to(_nllb_device)
+        _nllb_tokenizer = (
+            AutoTokenizer.from_pretrained(
+                NLLB_MODEL_NAME
+            )
+        )
+
+        _nllb_model = (
+            AutoModelForSeq2SeqLM.from_pretrained(
+                NLLB_MODEL_NAME
+            )
+        )
+
+        _nllb_model.to(
+            _nllb_device
+        )
+
         _nllb_model.eval()
 
-        print("✅ NLLB translator loaded")
+        print(
+            "✅ NLLB 600M translator loaded"
+        )
 
-        return _nllb_tokenizer, _nllb_model, _nllb_device
+        return (
+            _nllb_tokenizer,
+            _nllb_model,
+            _nllb_device
+        )
 
     except Exception as e:
-        print("❌ Could not load NLLB translator:", e)
+
+        print(
+            "❌ Could not load NLLB translator:",
+            e
+        )
+
         _nllb_tokenizer = None
         _nllb_model = None
         _nllb_device = None
+
         return None, None, None
 
 
+# =========================================================
+# CONVERT SOURCE TIMES TO ETHIOPIA TIME
+# =========================================================
+
 def convert_times_to_ethiopia(value):
-    """Convert explicit source time zones in news text to Ethiopia time."""
+
     timezone_offsets = {
         "UTC": 0,
         "GMT": 0,
@@ -1020,37 +921,83 @@ def convert_times_to_ethiopia(value):
     )
 
     def replace_time(match):
+
         hour = int(match.group(1))
-        minute = int(match.group(2)) if match.group(2) else 0
+
+        minute = (
+            int(match.group(2))
+            if match.group(2)
+            else 0
+        )
+
         ampm = match.group(3)
         zone = match.group(4).upper()
 
         if ampm:
+
             ampm = ampm.upper()
-            if ampm == "PM" and hour != 12:
+
+            if (
+                ampm == "PM"
+                and hour != 12
+            ):
                 hour += 12
-            elif ampm == "AM" and hour == 12:
+
+            elif (
+                ampm == "AM"
+                and hour == 12
+            ):
                 hour = 0
 
-        source_offset = timezone_offsets.get(zone, 0)
+        source_offset = timezone_offsets.get(
+            zone,
+            0
+        )
+
         total_minutes = (
             hour * 60
             + minute
             + (3 - source_offset) * 60
         )
-        total_minutes %= (24 * 60)
 
-        eth_hour = total_minutes // 60
-        eth_minute = total_minutes % 60
+        total_minutes %= (
+            24 * 60
+        )
 
-        return f"{eth_hour:02d}:{eth_minute:02d} Ethiopia time"
+        eth_hour = (
+            total_minutes // 60
+        )
 
-    return pattern.sub(replace_time, value)
+        eth_minute = (
+            total_minutes % 60
+        )
+
+        return (
+            f"{eth_hour:02d}:"
+            f"{eth_minute:02d} "
+            f"Ethiopia time"
+        )
+
+    return pattern.sub(
+        replace_time,
+        value
+    )
 
 
-# Football names/terms that should remain recognizable after translation.
-# These are protected with private placeholders before NLLB translation.
+# =========================================================
+# FOOTBALL TERMS
+#
+# These terms are NOT sent through NLLB.
+# This prevents NLLB from producing broken words such as
+# NLLBKEEPX0X.
+# =========================================================
+
 PROTECTED_FOOTBALL_TERMS = [
+
+    # -------------------------
+    # MAJOR CLUBS
+    # -------------------------
+
     "Manchester United",
     "Manchester City",
     "Liverpool",
@@ -1058,153 +1005,390 @@ PROTECTED_FOOTBALL_TERMS = [
     "Chelsea",
     "Tottenham Hotspur",
     "Newcastle United",
+    "Aston Villa",
+    "West Ham United",
+    "Crystal Palace",
+    "Nottingham Forest",
     "Real Madrid",
     "Barcelona",
+    "Atletico Madrid",
     "Bayern Munich",
+    "Borussia Dortmund",
     "Paris Saint-Germain",
+    "Inter Milan",
+    "AC Milan",
+    "Juventus",
+    "Napoli",
+    "Roma",
+    "Ajax",
+    "Benfica",
+    "Porto",
+    "Sporting CP",
+
+    # -------------------------
+    # SHORT CLUB NAMES
+    # -------------------------
+
     "PSG",
+    "LFC",
+    "AFC",
+    "MUFC",
+    "MCFC",
+    "FCB",
+
+    # -------------------------
+    # COMPETITIONS
+    # -------------------------
+
     "Premier League",
     "Champions League",
     "Europa League",
+    "Conference League",
+    "FA Cup",
+    "Carabao Cup",
+    "Community Shield",
+    "Club World Cup",
+    "World Cup",
+    "AFCON",
     "UEFA",
     "FIFA",
+
+    # -------------------------
+    # FOOTBALL TERMS
+    # -------------------------
+
     "VAR",
-    "LFC",
-    "AFC",
-    "contract",
+    "Assist",
+    "Fulltime",
+    "Full-time",
+    "Half-time",
+    "Kick-off",
+    "Kickoff",
+    "Match Week",
+    "Man of the Match",
+    "Player of the Match",
+
     "transfer",
+    "transfers",
+    "contract",
+    "contracts",
     "deal",
     "medical",
     "loan",
-    "Assist",
-    "Fulltime",
+    "loanee",
+    "free agent",
+    "release clause",
+    "buy-back clause",
+
     "Here we go",
-    "Match Week",
+    "Here we Go",
+
+    "starting XI",
+    "starting 11",
+    "Starting XI",
+
+    "clean sheet",
+    "hat-trick",
+    "penalty",
+    "red card",
+    "yellow card",
+
+    # -------------------------
+    # FOOTBALL POSITIONS
+    # -------------------------
+
+    "goalkeeper",
+    "centre-back",
+    "center-back",
+    "left-back",
+    "right-back",
+    "midfielder",
+    "defender",
+    "forward",
+    "striker",
+    "winger",
+
+    # -------------------------
+    # COMMON FOOTBALL ABBREVIATIONS
+    # -------------------------
+
+    "EPL",
+    "UCL",
+    "UEL",
+    "PL",
+    "FT",
+    "HT",
 ]
 
 
-def protect_football_terms(text):
-    protected = {}
-    result = text
+# =========================================================
+# SORT TERMS LONGEST FIRST
+# =========================================================
 
-    # Longest first so compound names are protected before shorter terms.
-    terms = sorted(PROTECTED_FOOTBALL_TERMS, key=len, reverse=True)
-
-    counter = 0
-    for term in terms:
-        pattern = re.compile(re.escape(term), re.IGNORECASE)
-
-        def repl(match):
-            nonlocal counter
-            key = f"NLLBKEEPX{counter}X"
-            protected[key] = match.group(0)
-            counter += 1
-            return key
-
-        result = pattern.sub(repl, result)
-
-    return result, protected
+PROTECTED_FOOTBALL_TERMS_SORTED = sorted(
+    set(PROTECTED_FOOTBALL_TERMS),
+    key=len,
+    reverse=True
+)
 
 
-def restore_football_terms(text, protected):
-    result = text
-    for key, original in protected.items():
-        result = result.replace(key, original)
-    return result
+# =========================================================
+# PROPER NAME DETECTION
+#
+# Protect common multi-word English football names without
+# creating artificial placeholder tokens.
+# =========================================================
+
+PROPER_NAME_PATTERN = re.compile(
+    r"\b"
+    r"[A-Z][a-zA-ZÀ-ÖØ-öø-ÿ'-]+"
+    r"(?:\s+"
+    r"[A-Z][a-zA-ZÀ-ÖØ-öø-ÿ'-]+"
+    r"){1,3}"
+    r"\b"
+)
 
 
-def split_for_translation(text, tokenizer, max_tokens=220):
-    """Split long football posts so the 600M model does not exceed its input limit."""
-    paragraphs = re.split(r"\n\s*\n", text.strip())
-    chunks = []
-    current = ""
+def find_protected_terms(text):
+
+    matches = []
+
+    # -----------------------------------------------------
+    # Explicit football terms
+    # -----------------------------------------------------
+
+    explicit_pattern = re.compile(
+        "|".join(
+            re.escape(term)
+            for term in PROTECTED_FOOTBALL_TERMS_SORTED
+        ),
+        re.IGNORECASE
+    )
+
+    for match in explicit_pattern.finditer(text):
+
+        matches.append(
+            (
+                match.start(),
+                match.end(),
+                match.group(0)
+            )
+        )
+
+    # -----------------------------------------------------
+    # Multi-word proper names
+    # -----------------------------------------------------
+
+    for match in PROPER_NAME_PATTERN.finditer(text):
+
+        matches.append(
+            (
+                match.start(),
+                match.end(),
+                match.group(0)
+            )
+        )
+
+    # -----------------------------------------------------
+    # Remove overlaps.
+    # Explicit football terms get priority.
+    # -----------------------------------------------------
+
+    matches.sort(
+        key=lambda item: (
+            item[0],
+            -(item[1] - item[0])
+        )
+    )
+
+    accepted = []
+
+    for start, end, value in matches:
+
+        overlaps = False
+
+        for accepted_start, accepted_end, _ in accepted:
+
+            if (
+                start < accepted_end
+                and end > accepted_start
+            ):
+
+                overlaps = True
+                break
+
+        if not overlaps:
+
+            accepted.append(
+                (
+                    start,
+                    end,
+                    value
+                )
+            )
+
+    accepted.sort(
+        key=lambda item: item[0]
+    )
+
+    return accepted
+
+
+# =========================================================
+# SPLIT NORMAL TEXT INTO NLLB-SAFE PIECES
+# =========================================================
+
+def split_plain_text_for_nllb(
+    text,
+    tokenizer,
+    max_tokens=190
+):
+
+    if not text:
+        return []
+
+    pieces = []
+
+    paragraphs = text.split("\n")
 
     for paragraph in paragraphs:
-        paragraph = paragraph.strip()
-        if not paragraph:
+
+        if not paragraph.strip():
+
+            pieces.append(
+                ("\n", False)
+            )
+
             continue
 
-        candidate = paragraph if not current else current + "\n\n" + paragraph
+        paragraph = paragraph.strip()
+
+        # -------------------------------------------------
+        # First try the whole paragraph.
+        # -------------------------------------------------
+
         token_count = len(
             tokenizer(
-                candidate,
+                paragraph,
                 add_special_tokens=True,
                 truncation=False
             )["input_ids"]
         )
 
         if token_count <= max_tokens:
-            current = candidate
+
+            pieces.append(
+                (
+                    paragraph,
+                    True
+                )
+            )
+
             continue
 
-        if current:
-            chunks.append(current)
-            current = ""
+        # -------------------------------------------------
+        # Split long paragraph into sentences.
+        # -------------------------------------------------
 
-        # A single paragraph can still be long; split it by sentences.
-        sentences = re.split(r"(?<=[.!?])\s+", paragraph)
-        sentence_buffer = ""
+        sentences = re.split(
+            r"(?<=[.!?])\s+",
+            paragraph
+        )
 
         for sentence in sentences:
+
             sentence = sentence.strip()
+
             if not sentence:
                 continue
 
-            candidate_sentence = (
-                sentence
-                if not sentence_buffer
-                else sentence_buffer + " " + sentence
-            )
-
-            count = len(
+            token_count = len(
                 tokenizer(
-                    candidate_sentence,
+                    sentence,
                     add_special_tokens=True,
                     truncation=False
                 )["input_ids"]
             )
 
-            if count <= max_tokens:
-                sentence_buffer = candidate_sentence
-            else:
-                if sentence_buffer:
-                    chunks.append(sentence_buffer)
+            if token_count <= max_tokens:
 
-                # Extremely long single sentence: hard split by words.
-                words = sentence.split()
-                word_buffer = ""
-                for word in words:
-                    candidate_word = (
-                        word
-                        if not word_buffer
-                        else word_buffer + " " + word
+                pieces.append(
+                    (
+                        sentence,
+                        True
                     )
-                    count_word = len(
-                        tokenizer(
-                            candidate_word,
-                            add_special_tokens=True,
-                            truncation=False
-                        )["input_ids"]
+                )
+
+                continue
+
+            # -------------------------------------------------
+            # Extremely long sentence → words.
+            # -------------------------------------------------
+
+            words = sentence.split()
+
+            word_buffer = ""
+
+            for word in words:
+
+                candidate = (
+                    word
+                    if not word_buffer
+                    else word_buffer + " " + word
+                )
+
+                candidate_tokens = len(
+                    tokenizer(
+                        candidate,
+                        add_special_tokens=True,
+                        truncation=False
+                    )["input_ids"]
+                )
+
+                if candidate_tokens <= max_tokens:
+
+                    word_buffer = candidate
+
+                else:
+
+                    if word_buffer:
+
+                        pieces.append(
+                            (
+                                word_buffer,
+                                True
+                            )
+                        )
+
+                    word_buffer = word
+
+            if word_buffer:
+
+                pieces.append(
+                    (
+                        word_buffer,
+                        True
                     )
-                    if count_word <= max_tokens:
-                        word_buffer = candidate_word
-                    else:
-                        if word_buffer:
-                            chunks.append(word_buffer)
-                        word_buffer = word
-                sentence_buffer = word_buffer
+                )
 
-        if sentence_buffer:
-            chunks.append(sentence_buffer)
-
-    if current:
-        chunks.append(current)
-
-    return chunks or [text.strip()]
+    return pieces
 
 
-def nllb_translate_chunk(text, tokenizer, model, device):
+# =========================================================
+# TRANSLATE ONE NLLB CHUNK
+# =========================================================
+
+def nllb_translate_chunk(
+    text,
+    tokenizer,
+    model,
+    device
+):
+
     import torch
+
+    if not text.strip():
+        return ""
 
     tokenizer.src_lang = "eng_Latn"
 
@@ -1221,103 +1405,334 @@ def nllb_translate_chunk(text, tokenizer, model, device):
         for key, value in inputs.items()
     }
 
-    forced_bos_token_id = tokenizer.convert_tokens_to_ids(
-        "amh_Ethi"
+    forced_bos_token_id = (
+        tokenizer.convert_tokens_to_ids(
+            "amh_Ethi"
+        )
     )
 
     with torch.no_grad():
+
         outputs = model.generate(
+
             **inputs,
-            forced_bos_token_id=forced_bos_token_id,
+
+            forced_bos_token_id=(
+                forced_bos_token_id
+            ),
+
+            # Stay safely within the model's limit.
             max_length=256,
-            num_beams=4,
-            early_stopping=True,
+
+            # Slightly stronger beam search.
+            num_beams=5,
+
+            # Helps avoid excessively short translations.
+            length_penalty=1.0,
+
+            # Reduces repeated phrases.
             no_repeat_ngram_size=3,
+
+            # Avoid unnecessary sampling.
+            do_sample=False,
+
+            early_stopping=True,
         )
 
-    return tokenizer.batch_decode(
+    result = tokenizer.batch_decode(
         outputs,
         skip_special_tokens=True
     )[0].strip()
 
+    return result
 
-def translate_to_amharic(text):
+
+# =========================================================
+# TRANSLATE ONLY THE NON-PROTECTED TEXT
+#
+# This is the KEY improvement.
+#
+# Example:
+#
+# "Liverpool have reached a deal with Arsenal"
+#
+# NLLB receives:
+#
+# "have reached a deal with"
+#
+# while:
+#
+# Liverpool
+# Arsenal
+#
+# remain untouched.
+#
+# NO fake NLLBKEEPX placeholders are ever created.
+# =========================================================
+
+def translate_with_protected_terms(
+    text,
+    tokenizer,
+    model,
+    device
+):
+
     if not text:
         return ""
 
-    text = convert_times_to_ethiopia(text)
+    matches = find_protected_terms(text)
 
-    tokenizer, model, device = load_nllb_model()
+    if not matches:
 
-    if tokenizer is None or model is None:
-        print("⚠ NLLB unavailable - using original English text")
-        return text.strip()
-
-    protected_text, protected = protect_football_terms(text)
-
-    try:
-        chunks = split_for_translation(
-            protected_text,
+        pieces = split_plain_text_for_nllb(
+            text,
             tokenizer,
-            max_tokens=220
+            max_tokens=190
         )
 
-        translated_chunks = []
+        output = []
 
-        for index, chunk in enumerate(chunks, start=1):
-            print(
-                f"🔄 NLLB translating part {index}/{len(chunks)}..."
-            )
+        for piece, should_translate in pieces:
 
-            translated_chunk = nllb_translate_chunk(
-                chunk,
+            if not should_translate:
+
+                output.append(piece)
+                continue
+
+            translated = nllb_translate_chunk(
+                piece,
                 tokenizer,
                 model,
                 device
             )
 
-            if translated_chunk:
-                translated_chunks.append(
-                    translated_chunk
+            output.append(
+                translated
+                if translated
+                else piece
+            )
+
+        return "\n".join(output).strip()
+
+    result_parts = []
+
+    cursor = 0
+
+    for start, end, original_term in matches:
+
+        # -------------------------------------------------
+        # Translate text before protected term.
+        # -------------------------------------------------
+
+        before = text[
+            cursor:start
+        ]
+
+        if before:
+
+            pieces = split_plain_text_for_nllb(
+                before,
+                tokenizer,
+                max_tokens=190
+            )
+
+            for piece, should_translate in pieces:
+
+                if not should_translate:
+
+                    result_parts.append(piece)
+                    continue
+
+                translated = nllb_translate_chunk(
+                    piece,
+                    tokenizer,
+                    model,
+                    device
                 )
-            else:
-                translated_chunks.append(chunk)
 
-        translated = "\n\n".join(
-            translated_chunks
-        ).strip()
+                result_parts.append(
+                    translated
+                    if translated
+                    else piece
+                )
 
-        translated = restore_football_terms(
-            translated,
-            protected
+        # -------------------------------------------------
+        # Keep football term EXACTLY as source.
+        # -------------------------------------------------
+
+        result_parts.append(
+            original_term
         )
 
-        if translated:
-            print("✅ FREE NLLB AMHARIC TRANSLATION SUCCESS")
-            return translated
+        cursor = end
 
-        print("⚠ NLLB returned empty text - using original text")
+    # -----------------------------------------------------
+    # Translate remaining text.
+    # -----------------------------------------------------
+
+    remaining = text[cursor:]
+
+    if remaining:
+
+        pieces = split_plain_text_for_nllb(
+            remaining,
+            tokenizer,
+            max_tokens=190
+        )
+
+        for piece, should_translate in pieces:
+
+            if not should_translate:
+
+                result_parts.append(piece)
+                continue
+
+            translated = nllb_translate_chunk(
+                piece,
+                tokenizer,
+                model,
+                device
+            )
+
+            result_parts.append(
+                translated
+                if translated
+                else piece
+            )
+
+    return "".join(result_parts).strip()
+
+
+# =========================================================
+# FINAL NLLB TRANSLATION
+# =========================================================
+
+def translate_to_amharic(text):
+
+    if not text:
+        return ""
+
+    # -----------------------------------------------------
+    # Convert explicit source times first.
+    # -----------------------------------------------------
+
+    text = convert_times_to_ethiopia(
+        text
+    )
+
+    tokenizer, model, device = (
+        load_nllb_model()
+    )
+
+    if (
+        tokenizer is None
+        or model is None
+    ):
+
+        print(
+            "⚠ NLLB unavailable - "
+            "using original English text"
+        )
+
         return text.strip()
 
+    try:
+
+        print(
+            "🇪🇹 Translating with "
+            "NLLB 600M..."
+        )
+
+        translated = (
+            translate_with_protected_terms(
+                text,
+                tokenizer,
+                model,
+                device
+            )
+        )
+
+        if not translated:
+
+            print(
+                "⚠ NLLB returned empty text"
+            )
+
+            return text.strip()
+
+        # -------------------------------------------------
+        # SAFETY CHECK
+        #
+        # Old broken placeholders must NEVER reach Telegram.
+        # -------------------------------------------------
+
+        broken_placeholder_pattern = re.compile(
+            r"NLLB\s*KEEP\s*X?\d+\s*X?",
+            re.IGNORECASE
+        )
+
+        if broken_placeholder_pattern.search(
+            translated
+        ):
+
+            print(
+                "⚠ Broken NLLB placeholder "
+                "detected - removing corrupted token"
+            )
+
+            translated = (
+                broken_placeholder_pattern.sub(
+                    "",
+                    translated
+                )
+            )
+
+        translated = re.sub(
+            r"\n{3,}",
+            "\n\n",
+            translated
+        ).strip()
+
+        print(
+            "✅ NLLB 600M AMHARIC "
+            "TRANSLATION SUCCESS"
+        )
+
+        return translated
+
     except Exception as e:
-        print("❌ NLLB translation error:", e)
-        print("⚠ Using original English text for this post")
+
+        print(
+            "❌ NLLB translation error:",
+            e
+        )
+
+        print(
+            "⚠ Using original English text "
+            "for this post"
+        )
+
         return text.strip()
 
 
 # =========================================================
-# ETHIOPIAN CALENDAR DATE + ETHIOPIAN CLOCK
+# ETHIOPIAN CALENDAR DATE + CLOCK
 # =========================================================
 
 def get_ethiopian_date_and_session():
 
-    utc_now = datetime.now(timezone.utc)
-
-    ethiopia_now = (
-        utc_now + timedelta(hours=3)
+    utc_now = datetime.now(
+        timezone.utc
     )
 
-    now = ethiopia_now.replace(tzinfo=None)
+    ethiopia_now = (
+        utc_now
+        + timedelta(hours=3)
+    )
+
+    now = ethiopia_now.replace(
+        tzinfo=None
+    )
 
     year = now.year
 
@@ -1337,7 +1752,9 @@ def get_ethiopian_date_and_session():
 
         eth_year = year - 9
 
-        previous_gregorian_year = year - 1
+        previous_gregorian_year = (
+            year - 1
+        )
 
         previous_new_year_day = (
             12
@@ -1352,14 +1769,23 @@ def get_ethiopian_date_and_session():
         )
 
     else:
+
         eth_year = year - 8
 
-    days = (now - new_year).days
+    days = (
+        now - new_year
+    ).days
 
-    eth_month = (days // 30) + 1
-    eth_day = (days % 30) + 1
+    eth_month = (
+        days // 30
+    ) + 1
+
+    eth_day = (
+        days % 30
+    ) + 1
 
     months = {
+
         1: "መስከረም",
         2: "ጥቅምት",
         3: "ኅዳር",
@@ -1376,17 +1802,38 @@ def get_ethiopian_date_and_session():
     }
 
     if 6 <= now.hour < 12:
-        session = "ጠዋት | Morning"
-    elif 12 <= now.hour < 14:
-        session = "እኩለ ቀን | Midday"
-    elif 14 <= now.hour < 18:
-        session = "ከሰዓት | Afternoon"
-    elif 18 <= now.hour < 21:
-        session = "ማታ | Evening"
-    else:
-        session = "ሌሊት | Night"
 
-    ethiopian_hour = (now.hour - 6) % 12
+        session = (
+            "ጠዋት | Morning"
+        )
+
+    elif 12 <= now.hour < 14:
+
+        session = (
+            "እኩለ ቀን | Midday"
+        )
+
+    elif 14 <= now.hour < 18:
+
+        session = (
+            "ከሰዓት | Afternoon"
+        )
+
+    elif 18 <= now.hour < 21:
+
+        session = (
+            "ማታ | Evening"
+        )
+
+    else:
+
+        session = (
+            "ሌሊት | Night"
+        )
+
+    ethiopian_hour = (
+        now.hour - 6
+    ) % 12
 
     if ethiopian_hour == 0:
         ethiopian_hour = 12
@@ -1397,7 +1844,9 @@ def get_ethiopian_date_and_session():
     )
 
     return (
-        f"{months[eth_month]} {eth_day}, {eth_year}",
+        f"{months[eth_month]} "
+        f"{eth_day}, "
+        f"{eth_year}",
         session,
         time_text
     )
@@ -1407,11 +1856,12 @@ def get_ethiopian_date_and_session():
 # CREATE FINAL POST
 # =========================================================
 
-def create_post(text, destination):
+def create_post(
+    text,
+    destination
+):
 
-    text = remove_links(
-        text
-    )
+    text = remove_links(text)
 
     if not text:
         return ""
@@ -1433,17 +1883,15 @@ def create_post(text, destination):
         ethiopian_time
     ) = get_ethiopian_date_and_session()
 
-    # =====================================================
-    # CHANNEL-SPECIFIC BRANDING
-    # =====================================================
-
     channel_branding = {
 
         "@habeshasport": {
+
             "header": (
                 "⚽ <b>HABESHA SPORT | "
                 "አጭር የእግር ኳስ ዜና</b>"
             ),
+
             "footer": (
                 "📢 <b>Habesha Sport</b> | "
                 "ኢትዮ ስፖርት"
@@ -1451,10 +1899,12 @@ def create_post(text, destination):
         },
 
         "@arsenaletgunners": {
+
             "header": (
                 "🔴⚪ <b>ARSENAL NEWS | "
                 "የአርሰናል ዜና</b>"
             ),
+
             "footer": (
                 "🔴⚪ <b>Arsenal Ethiopia</b> | "
                 "አርሰናል ኢትዮጵያ"
@@ -1462,10 +1912,12 @@ def create_post(text, destination):
         },
 
         "@liverpoolethiop": {
+
             "header": (
                 "🔴 <b>LIVERPOOL NEWS | "
                 "የሊቨርፑል ዜና</b>"
             ),
+
             "footer": (
                 "🔴 <b>Liverpool Ethiopia</b> | "
                 "ሊቨርፑል ኢትዮጵያ"
@@ -1473,10 +1925,12 @@ def create_post(text, destination):
         },
 
         "@mancitynewset": {
+
             "header": (
                 "🔵 <b>MAN CITY NEWS | "
                 "የማን ሲቲ ዜና</b>"
             ),
+
             "footer": (
                 "🔵 <b>Man City Ethiopia</b> | "
                 "ማን ሲቲ ኢትዮጵያ"
@@ -1484,10 +1938,12 @@ def create_post(text, destination):
         },
 
         "@chelseafcet": {
+
             "header": (
                 "🔵 <b>CHELSEA NEWS | "
                 "የቼልሲ ዜና</b>"
             ),
+
             "footer": (
                 "🔵 <b>Chelsea Ethiopia</b> | "
                 "ቼልሲ ኢትዮጵያ"
@@ -1495,10 +1951,12 @@ def create_post(text, destination):
         },
 
         "@manunitedethiopia": {
+
             "header": (
                 "🔴 <b>MAN UNITED NEWS | "
                 "የማን ዩናይትድ ዜና</b>"
             ),
+
             "footer": (
                 "🔴 <b>Man United Ethiopia</b> | "
                 "ማን ዩናይትድ ኢትዮጵያ"
@@ -1511,14 +1969,16 @@ def create_post(text, destination):
         channel_branding["@habeshasport"]
     )
 
-    # Date/time is shown only on the General Habesha Sport channel.
-    # Club channels keep their branding header without date/time.
     if destination == "@habeshasport":
+
         date_time_header = (
-            f"📅 <b>{eth_date} | {session}</b>\n"
+            f"📅 <b>{eth_date} | "
+            f"{session}</b>\n"
             f"🕒 <b>{ethiopian_time}</b>\n"
         )
+
     else:
+
         date_time_header = ""
 
     return (
@@ -1528,11 +1988,11 @@ def create_post(text, destination):
         + "\n\n"
         + "━━━━━━━━━━━━━━\n"
         + f"{branding['footer']}\n"
-        + "📲 <b>ሼር ያድርጉ፣ Like አትርሱ —❤️</b>\n"
+        + "📲 <b>ሼር ያድርጉ፣ "
+        + "Like አትርሱ —❤️</b>\n"
         + "❤️  🔥  👍  😂  😢\n"
         + "💖 <b>እንወዳችኋለን!</b> ❤️"
     )
-
 
 
 # =========================================================
@@ -1545,13 +2005,8 @@ def is_advertisement(message):
         message.message or ""
     ).lower()
 
-    # =====================================================
-    # STRONG AD / BETTING WORDS
-    # =====================================================
-
     ad_words = [
 
-        # Files / downloads
         ".apk",
         ".exe",
         ".msi",
@@ -1561,7 +2016,6 @@ def is_advertisement(message):
         "download now",
         "install now",
 
-        # Betting companies
         "betwinner",
         "linebet",
         "1xbet",
@@ -1578,7 +2032,6 @@ def is_advertisement(message):
         "parimatch",
         "stake.com",
 
-        # Betting language
         "betting",
         "sportsbook",
         "sports book",
@@ -1591,14 +2044,12 @@ def is_advertisement(message):
         "freebets",
         "prediction coupon",
 
-        # Casino
         "casino",
         "roulette",
         "slot games",
         "slots",
         "jackpot",
 
-        # Promotion
         "bonus",
         "promo code",
         "promocode",
@@ -1610,7 +2061,6 @@ def is_advertisement(message):
         "special offer",
         "limited offer",
 
-        # Gambling links / wording
         "gambling",
         "gaming bonus",
         "deposit now",
@@ -1621,12 +2071,7 @@ def is_advertisement(message):
     for word in ad_words:
 
         if word in text:
-
             return True
-
-    # =====================================================
-    # FILE NAME CHECK
-    # =====================================================
 
     if message.file:
 
@@ -1638,9 +2083,7 @@ def is_advertisement(message):
 
         if filename:
 
-            filename = (
-                filename.lower()
-            )
+            filename = filename.lower()
 
             if filename.endswith(
                 (
@@ -1669,7 +2112,6 @@ def is_advertisement(message):
             for word in filename_ad_words:
 
                 if word in filename:
-
                     return True
 
     return False
@@ -1694,13 +2136,7 @@ async def process_message(
             message.message or ""
         )
 
-        # =================================================
-        # ADVERTISEMENT FILTER
-        # =================================================
-
-        if is_advertisement(
-            message
-        ):
+        if is_advertisement(message):
 
             print(
                 "🚫 ADVERTISEMENT BLOCKED"
@@ -1722,32 +2158,13 @@ async def process_message(
             "\n" + "=" * 60
         )
 
-        print(
-            "📰 NEW NEWS"
-        )
+        print("📰 NEW NEWS")
+        print("SOURCE:", source_username)
+        print("DESTINATION:", destination)
+        print("MESSAGE ID:", message.id)
 
-        print(
-            "SOURCE:",
-            source_username
-        )
-
-        print(
-            "DESTINATION:",
-            destination
-        )
-
-        print(
-            "MESSAGE ID:",
-            message.id
-        )
-
-        print(
-            "TEXT:"
-        )
-
-        print(
-            original_text[:500]
-        )
+        print("TEXT:")
+        print(original_text[:500])
 
         post = create_post(
             original_text,
@@ -1768,10 +2185,6 @@ async def process_message(
 
         media = None
 
-        # =================================================
-        # TELEGRAM MEDIA POST
-        # =================================================
-
         if message.media:
 
             print(
@@ -1791,10 +2204,6 @@ async def process_message(
             if media:
 
                 telegram_posted = False
-
-                # =================================================
-                # FIRST TRY: TELEGRAM BOT
-                # =================================================
 
                 try:
 
@@ -1834,10 +2243,6 @@ async def process_message(
                         "user account..."
                     )
 
-                    # =================================================
-                    # FALLBACK: TELEGRAM USER ACCOUNT
-                    # =================================================
-
                     try:
 
                         await user_client.send_file(
@@ -1867,10 +2272,6 @@ async def process_message(
                             user_media_error
                         )
 
-                # =================================================
-                # FACEBOOK ONLY AFTER TELEGRAM SUCCESS
-                # =================================================
-
                 if telegram_posted:
 
                     facebook_post_media(
@@ -1880,26 +2281,14 @@ async def process_message(
                     )
 
                     try:
-
-                        os.remove(
-                            media
-                        )
-
+                        os.remove(media)
                     except Exception:
                         pass
 
                     return True, True
 
-                # =================================================
-                # BOTH TELEGRAM METHODS FAILED
-                # =================================================
-
                 try:
-
-                    os.remove(
-                        media
-                    )
-
+                    os.remove(media)
                 except Exception:
                     pass
 
@@ -1915,7 +2304,7 @@ async def process_message(
             )
 
         # =================================================
-        # TEXT ONLY POST
+        # TEXT ONLY
         # =================================================
 
         if post:
@@ -1932,7 +2321,6 @@ async def process_message(
                 destination
             )
 
-            # Facebook after Telegram success
             facebook_post_text(
                 destination,
                 post
@@ -2022,13 +2410,9 @@ async def check_channel(
                     latest_messages[0].id
                 )
 
-                state[channel] = (
-                    latest_id
-                )
+                state[channel] = latest_id
 
-                save_state(
-                    state
-                )
+                save_state(state)
 
                 print(
                     "✅ Starting from "
@@ -2040,9 +2424,7 @@ async def check_channel(
 
                 state[channel] = 0
 
-                save_state(
-                    state
-                )
+                save_state(state)
 
                 print(
                     "ℹ Channel has no messages"
@@ -2077,9 +2459,7 @@ async def check_channel(
             )
         ):
 
-            messages.append(
-                message
-            )
+            messages.append(message)
 
         if not messages:
 
@@ -2095,9 +2475,7 @@ async def check_channel(
             f"new message(s)"
         )
 
-        highest_successful_id = (
-            last_id
-        )
+        highest_successful_id = last_id
 
         post_count = int(
             state.get(
@@ -2146,9 +2524,7 @@ async def check_channel(
                             f"#{post_count}"
                         )
 
-                await asyncio.sleep(
-                    2
-                )
+                await asyncio.sleep(2)
 
             else:
 
@@ -2163,10 +2539,6 @@ async def check_channel(
 
                 break
 
-        # =================================================
-        # SAVE STATE
-        # =================================================
-
         if (
             highest_successful_id
             > last_id
@@ -2176,9 +2548,7 @@ async def check_channel(
                 highest_successful_id
             )
 
-            save_state(
-                state
-            )
+            save_state(state)
 
             print(
                 "✅ Updated last ID:",
@@ -2192,9 +2562,7 @@ async def check_channel(
             channel
         )
 
-        print(
-            e
-        )
+        print(e)
 
 
 # =========================================================
@@ -2223,9 +2591,14 @@ async def main():
     # =====================================================
 
     user_client = TelegramClient(
-        StringSession(USER_SESSION),
+
+        StringSession(
+            USER_SESSION
+        ),
+
         API_ID,
         API_HASH,
+
         connection_retries=10,
         retry_delay=5,
         request_retries=10,
@@ -2237,9 +2610,12 @@ async def main():
     # =====================================================
 
     bot_client = TelegramClient(
+
         StringSession(),
+
         API_ID,
         API_HASH,
+
         connection_retries=10,
         retry_delay=5,
         request_retries=10,
@@ -2247,10 +2623,6 @@ async def main():
     )
 
     try:
-
-        # =================================================
-        # CONNECT USER
-        # =================================================
 
         print(
             "\n🔐 Connecting "
@@ -2262,10 +2634,6 @@ async def main():
         print(
             "✅ Telegram user connected"
         )
-
-        # =================================================
-        # CONNECT BOT
-        # =================================================
 
         print(
             "\n🤖 Connecting "
@@ -2280,27 +2648,21 @@ async def main():
             "✅ Telegram bot connected"
         )
 
-        # =================================================
-        # CHECK SOURCES
-        # =================================================
-
         print(
             "\n🔎 Checking "
             "source channels..."
         )
 
-        # =================================================
-        # CHECK ONLY THE GROUP TRIGGERED BY THIS SCHEDULE
-        # =================================================
-
         if BOT_SCHEDULE in SCHEDULE_GROUPS:
 
-            channels_to_check = SCHEDULE_GROUPS[
-                BOT_SCHEDULE
-            ]
+            channels_to_check = (
+                SCHEDULE_GROUPS[
+                    BOT_SCHEDULE
+                ]
+            )
 
             print(
-                "\\n⏰ Triggered schedule:",
+                "\n⏰ Triggered schedule:",
                 BOT_SCHEDULE
             )
 
@@ -2311,12 +2673,12 @@ async def main():
 
         else:
 
-            # Manual workflow run:
-            # check everything, as before.
-            channels_to_check = SOURCE_CHANNELS
+            channels_to_check = (
+                SOURCE_CHANNELS
+            )
 
             print(
-                "\\n🖐 Manual workflow run"
+                "\n🖐 Manual workflow run"
             )
 
             print(
