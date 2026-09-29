@@ -47,6 +47,7 @@ DEFAULT_DESTINATION = "@habeshasport"
 SOURCE_ROUTES = {
 
     # ARSENAL
+    "@YEGNA_ARSENAL_ETH": "@arsenaletgunners",
     "@arsenal_london": "@arsenaletgunners",
     "@Arsenalc": "@arsenaletgunners",
     "@gunnersfooty": "@arsenaletgunners",
@@ -69,6 +70,8 @@ SOURCE_ROUTES = {
     "@chelseafcnews01": "@chelseafcet",
     "@chelseaanalysis": "@chelseafcet",
     "@chelseasunsport": "@chelseafcet",
+    "@EthioZena_Chelsea": "@chelseafcet",
+    "@ETHIO_CHELSEA": "@chelseafcet",
 
     # MAN UNITED
     "@ManchesterUnited": "@manunitedethiopia",
@@ -87,6 +90,7 @@ SOURCE_ROUTES = {
 GENERAL_SOURCES = [
     "@sky_sports_world",
     "@Espnfc_news",
+    "@EthioEpl",
 ]
 
 
