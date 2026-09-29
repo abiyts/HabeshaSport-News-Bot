@@ -2,69 +2,116 @@ name: Habesha Sport News Bot
 
 on:
   schedule:
-    # General — every 5 minutes, starting at :00
-    - cron: "0,5,10,15,20,25,30,35,40,45,50,55 * * * *"
 
-    # Arsenal — every 5 minutes, starting at :01
-    - cron: "1,6,11,16,21,26,31,36,41,46,51,56 * * * *"
+    # =====================================================
+    # GENERAL — every 6 minutes, starting at :00
+    # =====================================================
+    - cron: "0,6,12,18,24,30,36,42,48,54 * * * *"
 
-    # Liverpool — every 5 minutes, starting at :02
-    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
+    # =====================================================
+    # ARSENAL — every 6 minutes, starting at :01
+    # =====================================================
+    - cron: "1,7,13,19,25,31,37,43,49,55 * * * *"
 
-    # Man City — every 5 minutes, starting at :03
-    - cron: "3,8,13,18,23,28,33,38,43,48,53,58 * * * *"
+    # =====================================================
+    # LIVERPOOL — every 6 minutes, starting at :02
+    # =====================================================
+    - cron: "2,8,14,20,26,32,38,44,50,56 * * * *"
 
-    # Chelsea — every 5 minutes, starting at :04
-    - cron: "4,9,14,19,24,29,34,39,44,49,54,59 * * * *"
+    # =====================================================
+    # MAN CITY — every 6 minutes, starting at :03
+    # =====================================================
+    - cron: "3,9,15,21,27,33,39,45,51,57 * * * *"
 
-    # Man United — every 5 minutes, starting at :05
-    - cron: "5,10,15,20,25,30,35,40,45,50,55 * * * *"
+    # =====================================================
+    # CHELSEA — every 6 minutes, starting at :04
+    # =====================================================
+    - cron: "4,10,16,22,28,34,40,46,52,58 * * * *"
+
+    # =====================================================
+    # MAN UNITED — every 6 minutes, starting at :05
+    # =====================================================
+    - cron: "5,11,17,23,29,35,41,47,53,59 * * * *"
 
   workflow_dispatch:
 
 permissions:
   contents: write
 
-# IMPORTANT:
+
+# =========================================================
+# IMPORTANT
+#
 # All scheduled runs use the same Telegram USER_SESSION.
-# Therefore all schedules must share ONE concurrency group.
+# Therefore all schedules share ONE concurrency group.
+# =========================================================
+
 concurrency:
   group: habesha-sport-bot
   cancel-in-progress: false
 
+
 jobs:
+
   run-bot:
+
     runs-on: ubuntu-latest
 
     steps:
+
+      # ===================================================
+      # DOWNLOAD BOT FILES
+      # ===================================================
+
       - name: Download bot files
         uses: actions/checkout@v4
+
+
+      # ===================================================
+      # PYTHON
+      # ===================================================
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # Cache the NLLB model so GitHub does not download ~2.5 GB
-      # again on every 5-minute workflow run.
+
+      # ===================================================
+      # CACHE NLLB
+      # ===================================================
+
       - name: Cache NLLB model
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
           key: nllb-amharic-600m-${{ runner.os }}-v1
 
+
+      # ===================================================
+      # INSTALL REQUIREMENTS
+      # ===================================================
+
       - name: Install requirements
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+
+      # ===================================================
+      # CHECK FACEBOOK SECRETS
+      # ===================================================
+
       - name: Check Facebook secrets
         env:
           FB_ETHIO_SPORT_PAGE_ID: ${{ secrets.FB_ETHIO_SPORT_PAGE_ID }}
           FB_ETHIO_SPORT_PAGE_TOKEN: ${{ secrets.FB_ETHIO_SPORT_PAGE_TOKEN }}
+
           FB_ARSENAL_PAGE_ID: ${{ secrets.FB_ARSENAL_PAGE_ID }}
           FB_ARSENAL_PAGE_TOKEN: ${{ secrets.FB_ARSENAL_PAGE_TOKEN }}
+
         run: |
+
           if [ -n "$FB_ETHIO_SPORT_PAGE_ID" ]; then
             echo "✅ Ethio Sport Page ID is configured"
           else
@@ -89,8 +136,14 @@ jobs:
             echo "❌ Arsenal Page Token is MISSING"
           fi
 
+
+      # ===================================================
+      # RUN BOT
+      # ===================================================
+
       - name: Run Telegram bot
         env:
+
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
@@ -102,22 +155,36 @@ jobs:
           FB_ARSENAL_PAGE_ID: ${{ secrets.FB_ARSENAL_PAGE_ID }}
           FB_ARSENAL_PAGE_TOKEN: ${{ secrets.FB_ARSENAL_PAGE_TOKEN }}
 
+          # GitHub automatically provides the exact
+          # cron expression that triggered this run.
           BOT_SCHEDULE: ${{ github.event.schedule }}
 
         run: |
           python -u github_bot.py
 
+
+      # ===================================================
+      # SAVE STATE
+      # ===================================================
+
       - name: Save bot state
         run: |
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add state.json
 
           if git diff --cached --quiet; then
+
             echo "No state changes"
+
           else
+
             git commit -m "Update bot state"
+
             git pull --rebase origin main
+
             git push origin main
+
           fi
