@@ -1,3 +1,4 @@
+```python
 import os
 import re
 import json
@@ -111,24 +112,26 @@ SOURCE_CHANNELS = (
 # =========================================================
 # SCHEDULE GROUPS
 #
-# Premier League is included in the GENERAL run.
-# Its destination is still @ethplg because it is in
-# SOURCE_ROUTES.
-#
-# This avoids a schedule-minute conflict.
+# Each destination group now has its own schedule.
+# Premier League is separated from GENERAL.
 # =========================================================
 
 SCHEDULE_GROUPS = {
 
-    # GENERAL + PREMIER LEAGUE
+    # =========================
+    # GENERAL
+    # =========================
+
     "0,6,12,18,24,30,36,42,48,54 * * * *": [
         "@sky_sports_world",
         "@Espnfc_news",
         "@EthioEpl",
-        "@Premier_League_News_TG",
     ],
 
+    # =========================
     # ARSENAL
+    # =========================
+
     "1,7,13,19,25,31,37,43,49,55 * * * *": [
         "@arsenal_london",
         "@Arsenalc",
@@ -139,21 +142,30 @@ SCHEDULE_GROUPS = {
         "@YEGNA_ARSENAL_ETH",
     ],
 
+    # =========================
     # LIVERPOOL
+    # =========================
+
     "2,8,14,20,26,32,38,44,50,56 * * * *": [
         "@LiverpoolFCNews",
         "@liverpool",
         "@lfconline",
     ],
 
+    # =========================
     # MAN CITY
+    # =========================
+
     "3,9,15,21,27,33,39,45,51,57 * * * *": [
         "@Manchester_City",
         "@manchester_city_cf",
         "@mancity247",
     ],
 
+    # =========================
     # CHELSEA
+    # =========================
+
     "4,10,16,22,28,34,40,46,52,58 * * * *": [
         "@Chelsea_fc_worldwide",
         "@chelseafcnews01",
@@ -163,7 +175,10 @@ SCHEDULE_GROUPS = {
         "@ETHIO_CHELSEA",
     ],
 
+    # =========================
     # MAN UNITED
+    # =========================
+
     "5,11,17,23,29,35,41,47,53,59 * * * *": [
         "@ManchesterUnited",
         "@Empire_MU",
@@ -171,6 +186,17 @@ SCHEDULE_GROUPS = {
         "@manchesterunitedsunsport",
         "@Manchester_Unitedfanns",
         "@man_united_ethio_fan",
+    ],
+
+    # =========================
+    # PREMIER LEAGUE
+    #
+    # Separate from GENERAL.
+    # Runs at minute :59, :05, :11, etc.
+    # =========================
+
+    "59,5,11,17,23,29,35,41,47,53 * * * *": [
+        "@Premier_League_News_TG",
     ],
 }
 
@@ -1035,11 +1061,20 @@ def translate_to_amharic(text):
 
 BRANDING = {
 
+    # =====================================================
+    # GENERAL
+    # =====================================================
+
     "@habeshasport": {
 
         "emoji": "⚽",
 
         "name": "HABESHA SPORT",
+
+        "header":
+            "⚽ HABESHA SPORT\n"
+            "አጭር የስፖርት ዜና "
+            "ለቤተሰቦቻችን",
 
         "footer":
             "❤️ ቤተሰቦቻችን ሆይ ላይክ 👍 "
@@ -1047,11 +1082,19 @@ BRANDING = {
             "ይደግፉን።"
     },
 
+    # =====================================================
+    # ARSENAL
+    # =====================================================
+
     "@arsenaletgunners": {
 
         "emoji": "🔴⚪",
 
         "name": "ARSENAL",
+
+        "header":
+            "🔴⚪ ARSENAL\n"
+            "🔴⚪ የአርሰናል ዜና",
 
         "footer":
             "🔴⚪ COYG! የአርሰናል ቤተሰብ ሆይ "
@@ -1059,11 +1102,19 @@ BRANDING = {
             "በማድረግ ይደግፉን።"
     },
 
+    # =====================================================
+    # LIVERPOOL
+    # =====================================================
+
     "@liverpoolethiop": {
 
         "emoji": "🔴",
 
         "name": "LIVERPOOL",
+
+        "header":
+            "🔴 LIVERPOOL\n"
+            "🔴 የሊቨርፑል ዜና",
 
         "footer":
             "🔴 You'll Never Walk Alone ❤️ "
@@ -1072,11 +1123,19 @@ BRANDING = {
             "በማድረግ ይደግፉን።"
     },
 
+    # =====================================================
+    # MAN CITY
+    # =====================================================
+
     "@mancitynewset": {
 
         "emoji": "🔵",
 
         "name": "MANCHESTER CITY",
+
+        "header":
+            "🔵 MANCHESTER CITY\n"
+            "🔵 የማንችስተር ሲቲ ዜና",
 
         "footer":
             "🔵 Come on City! "
@@ -1085,11 +1144,19 @@ BRANDING = {
             "በማድረግ ይደግፉን።"
     },
 
+    # =====================================================
+    # CHELSEA
+    # =====================================================
+
     "@chelseafcet": {
 
         "emoji": "🔵",
 
         "name": "CHELSEA",
+
+        "header":
+            "🔵 CHELSEA\n"
+            "🔵 የቼልሲ ዜና",
 
         "footer":
             "🔵 KTBFFH! የቼልሲ ቤተሰብ ሆይ "
@@ -1097,11 +1164,19 @@ BRANDING = {
             "በማድረግ ይደግፉን።"
     },
 
+    # =====================================================
+    # MAN UNITED
+    # =====================================================
+
     "@manunitedethiopia": {
 
         "emoji": "🔴",
 
         "name": "MANCHESTER UNITED",
+
+        "header":
+            "🔴 MANCHESTER UNITED\n"
+            "🔴 የማንችስተር ዩናይትድ ዜና",
 
         "footer":
             "🔴 Glory Glory Man United! "
@@ -1110,11 +1185,19 @@ BRANDING = {
             "በማድረግ ይደግፉን።"
     },
 
+    # =====================================================
+    # PREMIER LEAGUE
+    # =====================================================
+
     "@ethplg": {
 
         "emoji": "🏆",
 
         "name": "PREMIER LEAGUE",
+
+        "header":
+            "🏆 PREMIER LEAGUE\n"
+            "🏆 የእንግሊዝ ፕሪሚየር ሊግ ዜና",
 
         "footer":
             "🏆 Premier League የእንግሊዝ እግር ኳስ "
@@ -1140,6 +1223,25 @@ def create_general_header():
         "ለቤተሰቦቻችን\n\n"
         f"📅 {eth_date}\n"
         f"🕒 {eth_time} | {session}\n\n"
+    )
+
+
+# =========================================================
+# CREATE CLUB / PREMIER LEAGUE HEADER
+# =========================================================
+
+def create_club_header(destination):
+
+    branding = BRANDING.get(
+        destination
+    )
+
+    if not branding:
+        return ""
+
+    return (
+        branding["header"]
+        + "\n\n"
     )
 
 
@@ -1207,17 +1309,25 @@ def create_post(
 
     else:
 
+        header = create_club_header(
+            destination
+        )
+
         if translated:
 
             result = (
-                translated
+                header
+                + translated
                 + "\n\n"
                 + footer
             )
 
         else:
 
-            result = footer
+            result = (
+                header
+                + footer
+            )
 
     return result.strip()
 
@@ -2503,3 +2613,4 @@ if __name__ == "__main__":
         print(
             f"\n❌ Fatal error: {e}"
         )
+```
