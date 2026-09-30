@@ -84,6 +84,12 @@ SOURCE_ROUTES = {
     "@manchesterunitedsunsport": "@manunitedethiopia",
     "@Manchester_Unitedfanns": "@manunitedethiopia",
     "@man_united_ethio_fan": "@manunitedethiopia",
+
+    # =========================
+    # PREMIER LEAGUE
+    # =========================
+
+    "@Premier_League_News_TG": "@ethplg",
 }
 
 
@@ -107,12 +113,11 @@ SOURCE_CHANNELS = (
 # =========================================================
 # SCHEDULE GROUPS
 #
-# GENERAL   : 0,6,12,18...
-# ARSENAL   : 1,7,13,19...
-# LIVERPOOL : 2,8,14,20...
-# MAN CITY  : 3,9,15,21...
-# CHELSEA   : 4,10,16,22...
-# MAN UNITED: 5,11,17,23...
+# Existing groups remain unchanged.
+#
+# Premier League gets its own additional run at:
+#
+# 6,12,18,24,30,36,42,48,54
 # =========================================================
 
 SCHEDULE_GROUPS = {
@@ -168,6 +173,11 @@ SCHEDULE_GROUPS = {
         "@Manchester_Unitedfanns",
         "@man_united_ethio_fan",
     ],
+
+    # PREMIER LEAGUE
+    "6,12,18,24,30,36,42,48,54 * * * *": [
+        "@Premier_League_News_TG",
+    ],
 }
 
 
@@ -176,6 +186,7 @@ SCHEDULE_GROUPS = {
 # =========================================================
 
 FACEBOOK_GRAPH_VERSION = "v26.0"
+
 
 FACEBOOK_DESTINATIONS = {
 
@@ -189,7 +200,7 @@ FACEBOOK_DESTINATIONS = {
         "FB_ARSENAL_PAGE_TOKEN",
     ),
 
-    # Add other Facebook destinations later.
+    # Premier League Facebook can be added later.
 }
 
 
@@ -198,6 +209,7 @@ FACEBOOK_DESTINATIONS = {
 # =========================================================
 
 BUTTON_INTERVAL = 10
+
 
 PUSH_BUTTONS = [
 
@@ -414,7 +426,11 @@ def is_advertisement(message):
     try:
 
         text = (
-            getattr(message, "message", "")
+            getattr(
+                message,
+                "message",
+                ""
+            )
             or ""
         )
 
@@ -512,13 +528,10 @@ def get_ethiopian_date_and_session():
         session = "ሌሊት"
 
 
-    # -----------------------------------------------------
-    # Ethiopian calendar conversion
-    # -----------------------------------------------------
-
     gy = now.year
     gm = now.month
     gd = now.day
+
 
     if gm < 9:
 
@@ -558,12 +571,14 @@ def get_ethiopian_date_and_session():
 
 
     if eth_day <= 0:
+
         eth_day = 1
 
 
     time_string = now.strftime(
         "%I:%M %p"
     )
+
 
     return (
         f"{ey}-{eth_month:02d}-{eth_day:02d}",
@@ -573,5 +588,181 @@ def get_ethiopian_date_and_session():
 
 
 # =========================================================
-# NLLB TRANSL
+# NLLB TRANSLATION
+# =========================================================
+
+NLLB_MODEL_NAME = os.environ.get(
+    "NLLB_MODEL_NAME",
+    "dsfsi/nllb_200_distilled_600m-eng-amh"
+).strip()
+
+
+_nllb_tokenizer = None
+_nllb_model = None
+_nllb_device = None
+
+
+def load_nllb_model():
+
+    global _nllb_tokenizer
+    global _nllb_model
+    global _nllb_device
+
+
+    if (
+        _nllb_tokenizer is not None
+        and _nllb_model is not None
+    ):
+
+        return (
+            _nllb_tokenizer,
+            _nllb_model,
+            _nllb_device
+        )
+
+
+    print(
+        "🔄 Loading NLLB translation model..."
+    )
+
+
+    from transformers import (
+        AutoTokenizer,
+        AutoModelForSeq2SeqLM
+    )
+
+    import torch
+
+
+    _nllb_device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "cpu"
+    )
+
+
+    print(
+        f"🌐 NLLB model: "
+        f"{NLLB_MODEL_NAME}"
+    )
+
+
+    print(
+        f"🖥️ Translation device: "
+        f"{_nllb_device}"
+    )
+
+
+    _nllb_tokenizer = (
+        AutoTokenizer.from_pretrained(
+            NLLB_MODEL_NAME
+        )
+    )
+
+
+    _nllb_model = (
+        AutoModelForSeq2SeqLM.from_pretrained(
+            NLLB_MODEL_NAME
+        )
+    )
+
+
+    _nllb_model.to(
+        _nllb_device
+    )
+
+
+    _nllb_model.eval()
+
+
+    _nllb_tokenizer.src_lang = (
+        "eng_Latn"
+    )
+
+
+    print(
+        "✅ NLLB model loaded"
+    )
+
+
+    return (
+        _nllb_tokenizer,
+        _nllb_model,
+        _nllb_device
+    )
+
+
+# =========================================================
+# TIME CONVERSION
+# =========================================================
+
+def convert_times_to_ethiopia(text):
+
+    if not text:
+        return text
+
+
+    ethiopia = timezone(
+        timedelta(hours=3)
+    )
+
+
+    def replace_utc(match):
+
+        hour = int(
+            match.group(1)
+        )
+
+        minute = int(
+            match.group(2)
+        )
+
+
+        dt = datetime(
+            2026,
+            1,
+            1,
+            hour,
+            minute,
+            tzinfo=timezone.utc
+        )
+
+
+        et = dt.astimezone(
+            ethiopia
+        )
+
+
+        return et.strftime(
+            "%I:%M %p"
+        )
+
+
+    text = re.sub(
+        r'\b(\d{1,2}):(\d{2})\s*(?:UTC|GMT)\b',
+        replace_utc,
+        text,
+        flags=re.IGNORECASE
+    )
+
+
+    return text
+
+
+# =========================================================
+# TEXT SPLITTING
+# =========================================================
+
+def split_text_for_nllb(
+    text,
+    tokenizer,
+    max_tokens=220
+):
+
+    if not text:
+        return []
+
+
+    paragraphs = re.split(
+        r
 ```
