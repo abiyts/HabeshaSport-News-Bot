@@ -1,4 +1,3 @@
-```python
 import os
 import re
 import json
@@ -70,7 +69,6 @@ SOURCE_ROUTES = {
     "@chelseafcnews01": "@chelseafcet",
     "@chelseaanalysis": "@chelseafcet",
     "@chelseasunsport": "@chelseafcet",
-
     "@EthioZena_Chelsea": "@chelseafcet",
     "@ETHIO_CHELSEA": "@chelseafcet",
 
@@ -113,20 +111,21 @@ SOURCE_CHANNELS = (
 # =========================================================
 # SCHEDULE GROUPS
 #
-# Existing groups remain unchanged.
+# Premier League is included in the GENERAL run.
+# Its destination is still @ethplg because it is in
+# SOURCE_ROUTES.
 #
-# Premier League gets its own additional run at:
-#
-# 6,12,18,24,30,36,42,48,54
+# This avoids a schedule-minute conflict.
 # =========================================================
 
 SCHEDULE_GROUPS = {
 
-    # GENERAL
+    # GENERAL + PREMIER LEAGUE
     "0,6,12,18,24,30,36,42,48,54 * * * *": [
         "@sky_sports_world",
         "@Espnfc_news",
         "@EthioEpl",
+        "@Premier_League_News_TG",
     ],
 
     # ARSENAL
@@ -173,11 +172,6 @@ SCHEDULE_GROUPS = {
         "@Manchester_Unitedfanns",
         "@man_united_ethio_fan",
     ],
-
-    # PREMIER LEAGUE
-    "6,12,18,24,30,36,42,48,54 * * * *": [
-        "@Premier_League_News_TG",
-    ],
 }
 
 
@@ -186,7 +180,6 @@ SCHEDULE_GROUPS = {
 # =========================================================
 
 FACEBOOK_GRAPH_VERSION = "v26.0"
-
 
 FACEBOOK_DESTINATIONS = {
 
@@ -357,7 +350,6 @@ def remove_links(text):
 
 AD_WORDS = {
 
-    # promotion
     "promo",
     "#promo",
     "promocode",
@@ -378,7 +370,6 @@ AD_WORDS = {
     "join now",
     "click here",
 
-    # betting / gambling
     "betting",
     "sportsbook",
     "casino",
@@ -391,7 +382,6 @@ AD_WORDS = {
     "stake.com",
     "parimatch",
 
-    # apps / downloads
     ".apk",
     ".exe",
     "apk",
@@ -399,7 +389,6 @@ AD_WORDS = {
     "download now",
     "install app",
 
-    # money scams / marketing
     "make money",
     "earn money",
     "free money",
@@ -407,7 +396,6 @@ AD_WORDS = {
     "crypto giveaway",
     "giveaway",
 
-    # adult / spam
     "onlyfans",
     "xxx",
 }
@@ -508,39 +496,28 @@ def get_ethiopian_date_and_session():
     hour = now.hour
 
     if 5 <= hour < 11:
-
         session = "ጠዋት"
 
     elif 11 <= hour < 14:
-
         session = "እኩለ ቀን"
 
     elif 14 <= hour < 18:
-
         session = "ከሰዓት"
 
     elif 18 <= hour < 23:
-
         session = "ማታ"
 
     else:
-
         session = "ሌሊት"
-
 
     gy = now.year
     gm = now.month
     gd = now.day
 
-
     if gm < 9:
-
         ey = gy - 8
-
     else:
-
         ey = gy - 7
-
 
     if gm > 9 or (
         gm == 9
@@ -550,11 +527,8 @@ def get_ethiopian_date_and_session():
         eth_month = gm - 8
 
         if eth_month == 1:
-
             eth_day = gd - 11
-
         else:
-
             eth_day = gd - 10
 
     else:
@@ -562,23 +536,16 @@ def get_ethiopian_date_and_session():
         eth_month = gm + 4
 
         if gm == 1:
-
             eth_day = gd + 21
-
         else:
-
             eth_day = gd + 20
 
-
     if eth_day <= 0:
-
         eth_day = 1
-
 
     time_string = now.strftime(
         "%I:%M %p"
     )
-
 
     return (
         f"{ey}-{eth_month:02d}-{eth_day:02d}",
@@ -608,7 +575,6 @@ def load_nllb_model():
     global _nllb_model
     global _nllb_device
 
-
     if (
         _nllb_tokenizer is not None
         and _nllb_model is not None
@@ -620,11 +586,9 @@ def load_nllb_model():
             _nllb_device
         )
 
-
     print(
         "🔄 Loading NLLB translation model..."
     )
-
 
     from transformers import (
         AutoTokenizer,
@@ -633,25 +597,21 @@ def load_nllb_model():
 
     import torch
 
-
     _nllb_device = (
         "cuda"
         if torch.cuda.is_available()
         else "cpu"
     )
 
-
     print(
         f"🌐 NLLB model: "
         f"{NLLB_MODEL_NAME}"
     )
 
-
     print(
         f"🖥️ Translation device: "
         f"{_nllb_device}"
     )
-
 
     _nllb_tokenizer = (
         AutoTokenizer.from_pretrained(
@@ -659,31 +619,25 @@ def load_nllb_model():
         )
     )
 
-
     _nllb_model = (
         AutoModelForSeq2SeqLM.from_pretrained(
             NLLB_MODEL_NAME
         )
     )
 
-
     _nllb_model.to(
         _nllb_device
     )
 
-
     _nllb_model.eval()
-
 
     _nllb_tokenizer.src_lang = (
         "eng_Latn"
     )
 
-
     print(
         "✅ NLLB model loaded"
     )
-
 
     return (
         _nllb_tokenizer,
@@ -701,11 +655,9 @@ def convert_times_to_ethiopia(text):
     if not text:
         return text
 
-
     ethiopia = timezone(
         timedelta(hours=3)
     )
-
 
     def replace_utc(match):
 
@@ -717,7 +669,6 @@ def convert_times_to_ethiopia(text):
             match.group(2)
         )
 
-
         dt = datetime(
             2026,
             1,
@@ -727,16 +678,13 @@ def convert_times_to_ethiopia(text):
             tzinfo=timezone.utc
         )
 
-
         et = dt.astimezone(
             ethiopia
         )
 
-
         return et.strftime(
             "%I:%M %p"
         )
-
 
     text = re.sub(
         r'\b(\d{1,2}):(\d{2})\s*(?:UTC|GMT)\b',
@@ -744,7 +692,6 @@ def convert_times_to_ethiopia(text):
         text,
         flags=re.IGNORECASE
     )
-
 
     return text
 
@@ -762,24 +709,19 @@ def split_text_for_nllb(
     if not text:
         return []
 
-
     paragraphs = re.split(
         r'\n\s*\n',
         text
     )
 
-
     output = []
-
 
     for paragraph in paragraphs:
 
         paragraph = paragraph.strip()
 
-
         if not paragraph:
             continue
-
 
         try:
 
@@ -790,13 +732,11 @@ def split_text_for_nllb(
                 )
             )
 
-
         except Exception:
 
             token_count = (
                 max_tokens + 1
             )
-
 
         if token_count <= max_tokens:
 
@@ -806,31 +746,25 @@ def split_text_for_nllb(
 
             continue
 
-
         sentences = re.split(
             r'(?<=[.!?])\s+',
             paragraph
         )
 
-
         current = ""
-
 
         for sentence in sentences:
 
             sentence = sentence.strip()
 
-
             if not sentence:
                 continue
-
 
             candidate = (
                 sentence
                 if not current
                 else current + " " + sentence
             )
-
 
             try:
 
@@ -841,13 +775,11 @@ def split_text_for_nllb(
                     )
                 )
 
-
             except Exception:
 
                 candidate_tokens = (
                     max_tokens + 1
                 )
-
 
             if (
                 current
@@ -860,18 +792,15 @@ def split_text_for_nllb(
 
                 current = sentence
 
-
             else:
 
                 current = candidate
-
 
         if current.strip():
 
             output.append(
                 current.strip()
             )
-
 
     return output
 
@@ -890,9 +819,7 @@ def nllb_translate_chunk(
     if not text.strip():
         return ""
 
-
     import torch
-
 
     inputs = tokenizer(
         text,
@@ -901,19 +828,16 @@ def nllb_translate_chunk(
         max_length=512
     )
 
-
     inputs = {
         key: value.to(device)
         for key, value in inputs.items()
     }
-
 
     forced_bos_token_id = (
         tokenizer.convert_tokens_to_ids(
             "amh_Ethi"
         )
     )
-
 
     with torch.no_grad():
 
@@ -927,12 +851,10 @@ def nllb_translate_chunk(
             do_sample=False,
         )
 
-
     result = tokenizer.batch_decode(
         generated,
         skip_special_tokens=True
     )[0]
-
 
     return result.strip()
 
@@ -946,9 +868,7 @@ def clean_nllb_translation(text):
     if not text:
         return ""
 
-
     text = text.strip()
-
 
     text = re.sub(
         r'[ \t]+',
@@ -956,13 +876,11 @@ def clean_nllb_translation(text):
         text
     )
 
-
     text = re.sub(
         r'\n{3,}',
         '\n\n',
         text
     )
-
 
     return text.strip()
 
@@ -971,7 +889,6 @@ def clean_football_terms(text):
 
     if not text:
         return ""
-
 
     replacements = {
 
@@ -997,7 +914,6 @@ def clean_football_terms(text):
             "Assist",
     }
 
-
     for pattern, replacement in replacements.items():
 
         text = re.sub(
@@ -1006,7 +922,6 @@ def clean_football_terms(text):
             text,
             flags=re.IGNORECASE
         )
-
 
     return text
 
@@ -1020,13 +935,10 @@ def translate_to_amharic(text):
     if not text:
         return ""
 
-
     original_text = text.strip()
-
 
     if not original_text:
         return ""
-
 
     try:
 
@@ -1034,11 +946,9 @@ def translate_to_amharic(text):
             original_text
         )
 
-
         tokenizer, model, device = (
             load_nllb_model()
         )
-
 
         chunks = split_text_for_nllb(
             text,
@@ -1046,13 +956,10 @@ def translate_to_amharic(text):
             max_tokens=220
         )
 
-
         if not chunks:
             return ""
 
-
         translated_chunks = []
-
 
         for index, chunk in enumerate(
             chunks,
@@ -1064,7 +971,6 @@ def translate_to_amharic(text):
                 f"{index}/{len(chunks)}..."
             )
 
-
             try:
 
                 translated = (
@@ -1075,7 +981,6 @@ def translate_to_amharic(text):
                         device
                     )
                 )
-
 
                 if translated:
 
@@ -1089,7 +994,6 @@ def translate_to_amharic(text):
                         chunk
                     )
 
-
             except Exception as e:
 
                 print(
@@ -1097,29 +1001,23 @@ def translate_to_amharic(text):
                     f"failed: {e}"
                 )
 
-
                 translated_chunks.append(
                     chunk
                 )
-
 
         result = "\n\n".join(
             translated_chunks
         )
 
-
         result = clean_nllb_translation(
             result
         )
-
 
         result = clean_football_terms(
             result
         )
 
-
         return result.strip()
-
 
     except Exception as e:
 
@@ -1127,7 +1025,6 @@ def translate_to_amharic(text):
             f"❌ Translation failed: "
             f"{e}"
         )
-
 
         return original_text
 
@@ -1137,10 +1034,6 @@ def translate_to_amharic(text):
 # =========================================================
 
 BRANDING = {
-
-    # =====================================================
-    # GENERAL HABESHA SPORT
-    # =====================================================
 
     "@habeshasport": {
 
@@ -1154,11 +1047,6 @@ BRANDING = {
             "ይደግፉን።"
     },
 
-
-    # =====================================================
-    # ARSENAL
-    # =====================================================
-
     "@arsenaletgunners": {
 
         "emoji": "🔴⚪",
@@ -1170,11 +1058,6 @@ BRANDING = {
             "ላይክ 👍 ሼር 🔄 ኮመንት 💬 "
             "በማድረግ ይደግፉን።"
     },
-
-
-    # =====================================================
-    # LIVERPOOL
-    # =====================================================
 
     "@liverpoolethiop": {
 
@@ -1189,11 +1072,6 @@ BRANDING = {
             "በማድረግ ይደግፉን።"
     },
 
-
-    # =====================================================
-    # MAN CITY
-    # =====================================================
-
     "@mancitynewset": {
 
         "emoji": "🔵",
@@ -1207,11 +1085,6 @@ BRANDING = {
             "በማድረግ ይደግፉን።"
     },
 
-
-    # =====================================================
-    # CHELSEA
-    # =====================================================
-
     "@chelseafcet": {
 
         "emoji": "🔵",
@@ -1223,11 +1096,6 @@ BRANDING = {
             "ላይክ 👍 ሼር 🔄 ኮመንት 💬 "
             "በማድረግ ይደግፉን።"
     },
-
-
-    # =====================================================
-    # MAN UNITED
-    # =====================================================
 
     "@manunitedethiopia": {
 
@@ -1241,11 +1109,6 @@ BRANDING = {
             "ላይክ 👍 ሼር 🔄 ኮመንት 💬 "
             "በማድረግ ይደግፉን።"
     },
-
-
-    # =====================================================
-    # PREMIER LEAGUE
-    # =====================================================
 
     "@ethplg": {
 
@@ -1271,7 +1134,6 @@ def create_general_header():
         get_ethiopian_date_and_session()
     )
 
-
     return (
         "⚽ HABESHA SPORT\n"
         "አጭር የስፖርት ዜና "
@@ -1283,18 +1145,6 @@ def create_general_header():
 
 # =========================================================
 # CREATE FINAL POST
-#
-# GENERAL:
-#   Header + date/time + news + footer
-#
-# CLUBS / PREMIER LEAGUE:
-#   News + footer
-#
-# MEDIA-ONLY GENERAL:
-#   Header + date/time + footer
-#
-# MEDIA-ONLY CLUB:
-#   Footer
 # =========================================================
 
 def create_post(
@@ -1306,9 +1156,7 @@ def create_post(
         text or ""
     )
 
-
     translated = ""
-
 
     if text:
 
@@ -1318,29 +1166,24 @@ def create_post(
             )
         )
 
-
         translated = remove_links(
             translated
         )
-
 
     branding = BRANDING.get(
         destination,
         BRANDING["@habeshasport"]
     )
 
-
     footer = branding["footer"]
 
-
     # =====================================================
-    # GENERAL
+    # GENERAL HABESHA SPORT
     # =====================================================
 
     if destination == "@habeshasport":
 
         header = create_general_header()
-
 
         if translated:
 
@@ -1358,9 +1201,8 @@ def create_post(
                 + footer
             )
 
-
     # =====================================================
-    # CLUB / PREMIER LEAGUE
+    # CLUBS + PREMIER LEAGUE
     # =====================================================
 
     else:
@@ -1377,7 +1219,6 @@ def create_post(
 
             result = footer
 
-
     return result.strip()
 
 
@@ -1393,30 +1234,23 @@ def facebook_config(
         destination
     )
 
-
     if not config:
         return None, None
 
-
     page_id_env, token_env = config
-
 
     page_id = os.environ.get(
         page_id_env,
         ""
     ).strip()
 
-
     page_token = os.environ.get(
         token_env,
         ""
     ).strip()
 
-
     if not page_id or not page_token:
-
         return None, None
-
 
     return (
         page_id,
@@ -1429,13 +1263,11 @@ def facebook_plain_text(text):
     if not text:
         return ""
 
-
     text = re.sub(
         r'<[^>]+>',
         '',
         text
     )
-
 
     return html.unescape(
         text
@@ -1455,7 +1287,6 @@ def facebook_request(
         f"{endpoint}"
     )
 
-
     try:
 
         if files:
@@ -1469,12 +1300,9 @@ def facebook_request(
                 )
             )
 
-
             body = bytearray()
 
-
             params = params or {}
-
 
             for key, value in params.items():
 
@@ -1489,13 +1317,11 @@ def facebook_request(
                     )
                 )
 
-
             for key, file_info in files.items():
 
                 filename, content, mime = (
                     file_info
                 )
-
 
                 body.extend(
                     (
@@ -1509,21 +1335,17 @@ def facebook_request(
                     )
                 )
 
-
                 body.extend(content)
-
 
                 body.extend(
                     b"\r\n"
                 )
-
 
             body.extend(
                 f"--{boundary}--\r\n".encode(
                     "utf-8"
                 )
             )
-
 
             request = urllib.request.Request(
                 url,
@@ -1536,7 +1358,6 @@ def facebook_request(
                 }
             )
 
-
         else:
 
             encoded = urllib.parse.urlencode(
@@ -1545,13 +1366,11 @@ def facebook_request(
                 "utf-8"
             )
 
-
             request = urllib.request.Request(
                 url,
                 data=encoded,
                 method="POST"
             )
-
 
         with urllib.request.urlopen(
             request,
@@ -1562,11 +1381,9 @@ def facebook_request(
                 "utf-8"
             )
 
-
             return json.loads(
                 raw
             )
-
 
     except urllib.error.HTTPError as e:
 
@@ -1580,15 +1397,12 @@ def facebook_request(
 
             body = str(e)
 
-
         print(
             f"❌ Facebook HTTP error: "
             f"{e.code} {body}"
         )
 
-
         return None
-
 
     except Exception as e:
 
@@ -1596,7 +1410,6 @@ def facebook_request(
             f"❌ Facebook request error: "
             f"{e}"
         )
-
 
         return None
 
@@ -1612,19 +1425,15 @@ def facebook_post_text(
         )
     )
 
-
     if not page_id or not page_token:
         return False
-
 
     message = facebook_plain_text(
         text
     )
 
-
     if not message:
         return False
-
 
     result = facebook_request(
         f"{page_id}/feed",
@@ -1634,7 +1443,6 @@ def facebook_post_text(
         }
     )
 
-
     if result and result.get("id"):
 
         print(
@@ -1643,7 +1451,6 @@ def facebook_post_text(
         )
 
         return True
-
 
     return False
 
@@ -1660,17 +1467,14 @@ def facebook_post_media(
         )
     )
 
-
     if not page_id or not page_token:
         return False
-
 
     if not os.path.exists(
         file_path
     ):
 
         return False
-
 
     try:
 
@@ -1681,16 +1485,13 @@ def facebook_post_media(
 
             content = f.read()
 
-
         filename = os.path.basename(
             file_path
         )
 
-
         extension = os.path.splitext(
             filename
         )[1].lower()
-
 
         if extension in (
             ".jpg",
@@ -1703,7 +1504,6 @@ def facebook_post_media(
                 f"{page_id}/photos"
             )
 
-
             mime = (
                 "image/jpeg"
                 if extension in (
@@ -1712,7 +1512,6 @@ def facebook_post_media(
                 )
                 else "image/png"
             )
-
 
             result = facebook_request(
                 endpoint,
@@ -1733,13 +1532,11 @@ def facebook_post_media(
                 }
             )
 
-
         else:
 
             endpoint = (
                 f"{page_id}/videos"
             )
-
 
             result = facebook_request(
                 endpoint,
@@ -1760,7 +1557,6 @@ def facebook_post_media(
                 }
             )
 
-
         if result and (
             result.get("id")
             or result.get("post_id")
@@ -1773,9 +1569,7 @@ def facebook_post_media(
 
             return True
 
-
         return False
-
 
     except Exception as e:
 
@@ -1799,7 +1593,6 @@ def is_permanent_telegram_error(
         error
     ).lower()
 
-
     permanent_patterns = [
 
         "you can't write in this chat",
@@ -1821,7 +1614,6 @@ def is_permanent_telegram_error(
         "chat not found",
     ]
 
-
     return any(
         pattern in message
         for pattern in permanent_patterns
@@ -1841,10 +1633,6 @@ async def send_media_to_destination(
     buttons=None
 ):
 
-    # -----------------------------------------------------
-    # BOT
-    # -----------------------------------------------------
-
     try:
 
         await bot_client.send_file(
@@ -1855,15 +1643,12 @@ async def send_media_to_destination(
             buttons=buttons
         )
 
-
         print(
             f"✅ Media sent by bot: "
             f"{destination}"
         )
 
-
         return True
-
 
     except Exception as e:
 
@@ -1871,11 +1656,6 @@ async def send_media_to_destination(
             f"⚠️ Bot media send failed: "
             f"{e}"
         )
-
-
-        # -------------------------------------------------
-        # USER ACCOUNT FALLBACK
-        # -------------------------------------------------
 
         try:
 
@@ -1887,15 +1667,12 @@ async def send_media_to_destination(
                 buttons=buttons
             )
 
-
             print(
                 f"✅ Media sent by user account: "
                 f"{destination}"
             )
 
-
             return True
-
 
         except Exception as user_error:
 
@@ -1903,7 +1680,6 @@ async def send_media_to_destination(
                 f"❌ User media send failed: "
                 f"{user_error}"
             )
-
 
             return False
 
@@ -1924,7 +1700,6 @@ def get_post_buttons(
 
         return None
 
-
     # =====================================================
     # GENERAL
     # =====================================================
@@ -1932,7 +1707,6 @@ def get_post_buttons(
     if destination == "@habeshasport":
 
         return PUSH_BUTTONS
-
 
     # =====================================================
     # ARSENAL
@@ -1958,7 +1732,6 @@ def get_post_buttons(
 
         ]
 
-
     # =====================================================
     # LIVERPOOL
     # =====================================================
@@ -1982,7 +1755,6 @@ def get_post_buttons(
             ]
 
         ]
-
 
     # =====================================================
     # MAN CITY
@@ -2008,7 +1780,6 @@ def get_post_buttons(
 
         ]
 
-
     # =====================================================
     # CHELSEA
     # =====================================================
@@ -2032,7 +1803,6 @@ def get_post_buttons(
             ]
 
         ]
-
 
     # =====================================================
     # MAN UNITED
@@ -2058,7 +1828,6 @@ def get_post_buttons(
 
         ]
 
-
     # =====================================================
     # PREMIER LEAGUE
     # =====================================================
@@ -2082,7 +1851,6 @@ def get_post_buttons(
             ]
 
         ]
-
 
     return None
 
@@ -2108,7 +1876,6 @@ async def process_message(
         or ""
     ).strip()
 
-
     # =====================================================
     # AD FILTER
     # =====================================================
@@ -2122,9 +1889,7 @@ async def process_message(
             f"skipped: ID={message.id}"
         )
 
-
         return True, False
-
 
     # =====================================================
     # CLEAN SOURCE
@@ -2133,7 +1898,6 @@ async def process_message(
     clean_source_text = remove_links(
         source_text
     )
-
 
     # =====================================================
     # MEDIA
@@ -2146,7 +1910,6 @@ async def process_message(
             None
         )
     )
-
 
     # =====================================================
     # EMPTY
@@ -2162,28 +1925,16 @@ async def process_message(
             f"ID={message.id}"
         )
 
-
         return True, False
-
 
     # =====================================================
     # CREATE FINAL POST
-    #
-    # IMPORTANT:
-    # This is called for BOTH:
-    #
-    # 1. text/caption messages
-    # 2. media-only messages
-    #
-    # Therefore general header/footer will never
-    # be bypassed for media-only messages.
     # =====================================================
 
     post_text = create_post(
         clean_source_text,
         destination
     )
-
 
     # =====================================================
     # BUTTONS
@@ -2194,7 +1945,6 @@ async def process_message(
         post_number
     )
 
-
     # =====================================================
     # MEDIA
     # =====================================================
@@ -2203,14 +1953,12 @@ async def process_message(
 
         file_path = None
 
-
         try:
 
             print(
                 f"⬇️ Downloading media: "
                 f"ID={message.id}"
             )
-
 
             file_path = (
                 await user_client.download_media(
@@ -2219,7 +1967,6 @@ async def process_message(
                 )
             )
 
-
             if not file_path:
 
                 print(
@@ -2227,9 +1974,7 @@ async def process_message(
                     "returned nothing."
                 )
 
-
                 return True, False
-
 
             sent = (
                 await send_media_to_destination(
@@ -2242,7 +1987,6 @@ async def process_message(
                 )
             )
 
-
             if not sent:
 
                 print(
@@ -2250,11 +1994,7 @@ async def process_message(
                     f"ID={message.id}"
                 )
 
-
                 return True, False
-
-
-            # Facebook only after Telegram succeeds
 
             facebook_post_media(
                 destination,
@@ -2262,9 +2002,7 @@ async def process_message(
                 post_text
             )
 
-
             return True, True
-
 
         except Exception as e:
 
@@ -2273,9 +2011,7 @@ async def process_message(
                 f"{e}"
             )
 
-
             return True, False
-
 
         finally:
 
@@ -2296,7 +2032,6 @@ async def process_message(
 
                     pass
 
-
     # =====================================================
     # TEXT
     # =====================================================
@@ -2304,7 +2039,6 @@ async def process_message(
     if not post_text:
 
         return True, False
-
 
     try:
 
@@ -2315,12 +2049,10 @@ async def process_message(
             buttons=buttons
         )
 
-
         print(
             f"✅ Telegram text posted: "
             f"{destination}"
         )
-
 
     except Exception as e:
 
@@ -2328,7 +2060,6 @@ async def process_message(
             f"❌ Telegram text posting "
             f"failed: {e}"
         )
-
 
         if is_permanent_telegram_error(
             e
@@ -2340,12 +2071,9 @@ async def process_message(
                 "does not freeze."
             )
 
-
             return True, False
 
-
         return False, False
-
 
     # =====================================================
     # FACEBOOK
@@ -2355,7 +2083,6 @@ async def process_message(
         destination,
         post_text
     )
-
 
     return True, True
 
@@ -2376,11 +2103,9 @@ async def check_channel(
         f"\n📡 SOURCE: {source}"
     )
 
-
     print(
         f"🎯 DESTINATION: {destination}"
     )
-
 
     # =====================================================
     # GET ENTITY
@@ -2394,7 +2119,6 @@ async def check_channel(
             )
         )
 
-
     except Exception as e:
 
         print(
@@ -2402,9 +2126,7 @@ async def check_channel(
             f"{source}: {e}"
         )
 
-
         return
-
 
     # =====================================================
     # STATE KEY
@@ -2418,7 +2140,6 @@ async def check_channel(
         )
     )
 
-
     last_id = int(
         state.get(
             state_key,
@@ -2426,13 +2147,8 @@ async def check_channel(
         )
     )
 
-
     # =====================================================
     # FIRST RUN
-    #
-    # IMPORTANT:
-    # New source starts from the CURRENT latest message.
-    # It does NOT repost old history.
     # =====================================================
 
     if last_id == 0:
@@ -2440,7 +2156,6 @@ async def check_channel(
         try:
 
             latest_messages = []
-
 
             async for msg in (
                 user_client.iter_messages(
@@ -2453,23 +2168,19 @@ async def check_channel(
                     msg
                 )
 
-
             if latest_messages:
 
                 latest_id = (
                     latest_messages[0].id
                 )
 
-
                 state[state_key] = (
                     latest_id
                 )
 
-
                 save_state(
                     state
                 )
-
 
                 print(
                     f"🆕 First run for "
@@ -2478,14 +2189,12 @@ async def check_channel(
                     f"{latest_id}."
                 )
 
-
             else:
 
                 print(
                     f"ℹ️ No messages found "
                     f"in {source}."
                 )
-
 
         except Exception as e:
 
@@ -2494,16 +2203,13 @@ async def check_channel(
                 f"{e}"
             )
 
-
         return
-
 
     # =====================================================
     # FETCH NEW MESSAGES
     # =====================================================
 
     messages = []
-
 
     try:
 
@@ -2519,7 +2225,6 @@ async def check_channel(
                 msg
             )
 
-
     except Exception as e:
 
         print(
@@ -2527,9 +2232,7 @@ async def check_channel(
             f"{e}"
         )
 
-
         return
-
 
     if not messages:
 
@@ -2538,15 +2241,12 @@ async def check_channel(
             f"{source}"
         )
 
-
         return
-
 
     print(
         f"📨 {len(messages)} "
         f"new message(s)"
     )
-
 
     # =====================================================
     # PROCESS
@@ -2556,14 +2256,12 @@ async def check_channel(
 
     highest_processed_id = last_id
 
-
     for message in messages:
 
         print(
             f"\n➡️ Processing "
             f"{source} ID={message.id}"
         )
-
 
         success, posted = (
             await process_message(
@@ -2575,7 +2273,6 @@ async def check_channel(
             )
         )
 
-
         if success:
 
             highest_processed_id = max(
@@ -2583,21 +2280,17 @@ async def check_channel(
                 message.id
             )
 
-
             state[state_key] = (
                 highest_processed_id
             )
-
 
             save_state(
                 state
             )
 
-
             if posted:
 
                 post_number += 1
-
 
         else:
 
@@ -2607,7 +2300,6 @@ async def check_channel(
                 f"Stopping this source "
                 f"for now."
             )
-
 
             break
 
@@ -2622,7 +2314,6 @@ def get_schedule_sources():
 
         return None
 
-
     for cron_expression, sources in (
         SCHEDULE_GROUPS.items()
     ):
@@ -2630,7 +2321,6 @@ def get_schedule_sources():
         if cron_expression == BOT_SCHEDULE:
 
             return sources
-
 
     return None
 
@@ -2645,28 +2335,23 @@ async def main():
         "\n========================================"
     )
 
-
     print(
         "⚽ HABESHA SPORT NEWS BOT"
     )
 
-
     print(
         "========================================"
     )
-
 
     print(
         "🌐 Translation: "
         "NLLB English → Amharic"
     )
 
-
     print(
         f"📅 Schedule: "
         f"{BOT_SCHEDULE or 'manual/all sources'}"
     )
-
 
     # =====================================================
     # CLIENTS
@@ -2678,33 +2363,27 @@ async def main():
         API_HASH
     )
 
-
     bot_client = TelegramClient(
         "bot_session",
         API_ID,
         API_HASH
     )
 
-
     await user_client.start()
-
 
     await bot_client.start(
         bot_token=BOT_TOKEN
     )
 
-
     print(
         "✅ Telegram clients connected."
     )
-
 
     # =====================================================
     # STATE
     # =====================================================
 
     state = load_state()
-
 
     # =====================================================
     # DETERMINE SOURCES
@@ -2714,13 +2393,11 @@ async def main():
         get_schedule_sources()
     )
 
-
     if scheduled_sources is not None:
 
         sources_to_process = (
             scheduled_sources
         )
-
 
         print(
             f"⏰ Scheduled run: "
@@ -2728,19 +2405,16 @@ async def main():
             f"source(s)"
         )
 
-
     else:
 
         sources_to_process = (
             SOURCE_CHANNELS
         )
 
-
         print(
             f"🔎 Processing all sources: "
             f"{len(sources_to_process)}"
         )
-
 
     # =====================================================
     # PROCESS SOURCES
@@ -2762,7 +2436,6 @@ async def main():
                 )
             )
 
-
         if not destination:
 
             print(
@@ -2770,9 +2443,7 @@ async def main():
                 f"for {source}"
             )
 
-
             continue
-
 
         try:
 
@@ -2784,7 +2455,6 @@ async def main():
                 state
             )
 
-
         except Exception as e:
 
             print(
@@ -2792,11 +2462,9 @@ async def main():
                 f"{source}: {e}"
             )
 
-
         await asyncio.sleep(
             1
         )
-
 
     # =====================================================
     # DISCONNECT
@@ -2805,7 +2473,6 @@ async def main():
     await bot_client.disconnect()
 
     await user_client.disconnect()
-
 
     print(
         "\n✅ HABESHA SPORT BOT "
@@ -2825,17 +2492,14 @@ if __name__ == "__main__":
             main()
         )
 
-
     except KeyboardInterrupt:
 
         print(
             "\n🛑 Bot stopped."
         )
 
-
     except Exception as e:
 
         print(
             f"\n❌ Fatal error: {e}"
         )
-```
