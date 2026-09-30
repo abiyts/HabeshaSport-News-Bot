@@ -1,4 +1,3 @@
-```python
 import os
 import re
 import json
@@ -2613,4 +2612,3 @@ if __name__ == "__main__":
         print(
             f"\n❌ Fatal error: {e}"
         )
-```
